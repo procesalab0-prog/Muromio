@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function PanelPage() {
@@ -48,6 +49,19 @@ export default async function PanelPage() {
       </header>
 
       <section style={{ marginTop: 64 }}>
+        <Link
+          href="/panel/nuevo-render"
+          style={{
+            display: "inline-flex",
+            marginBottom: 28,
+            padding: "14px 22px",
+            background: "var(--rust)",
+            color: "var(--cream)",
+            textDecoration: "none",
+          }}
+        >
+          Crear nuevo render
+        </Link>
         {projects?.length ? (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 18 }}>
             {projects.map((project) => (

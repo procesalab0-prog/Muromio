@@ -42,3 +42,11 @@ La migración crea perfiles, proyectos, referencias y renders. Todas las tablas
 tienen Row Level Security para limitar los datos al propietario del proyecto.
 La clave `service_role` no es necesaria y nunca debe exponerse en variables
 `NEXT_PUBLIC_*`.
+
+## Generación de renders
+
+El primer proveedor integrado es Stability AI mediante sus servicios Control
+Sketch y Control Structure. Configura `STABILITY_API_KEY` únicamente como
+variable privada del servidor. Los usuarios autenticados pueden abrir
+`/panel/nuevo-render`, subir una imagen y registrar la generación dentro de su
+proyecto de Supabase.
