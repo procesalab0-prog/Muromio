@@ -13,7 +13,7 @@ import { RenderLab } from "./render-lab";
 import { Contacto } from "./contacto";
 import { SiteFooter } from "./site-footer";
 
-export function Landing() {
+export function Landing({ version }: { version: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [lang, setLang] = useState<Lang>("es");
 
@@ -171,7 +171,11 @@ export function Landing() {
 
   return (
     <div ref={rootRef} style={{ position: "relative" }}>
-      <SiteNav lang={lang} onToggleLang={() => setLang((l) => (l === "es" ? "en" : "es"))} />
+      <SiteNav
+        lang={lang}
+        version={version}
+        onToggleLang={() => setLang((l) => (l === "es" ? "en" : "es"))}
+      />
       <Hero lang={lang} />
       <Estudio lang={lang} />
       <ProyectoDestacado lang={lang} />
