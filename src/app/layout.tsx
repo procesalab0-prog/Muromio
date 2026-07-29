@@ -1,23 +1,29 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist } from "next/font/google";
+import { Jost, Lora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const jost = Jost({
+  variable: "--font-jost",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["300", "400", "500"],
 });
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const lora = Lora({
+  variable: "--font-lora",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Muromío — Renders de arquitectura e interiorismo con IA",
+  title: "Muromío — Estudio de interiorismo en León, Guanajuato",
   description:
-    "Muromío es el estudio de diseño que convierte planos, bocetos y referencias en renders fotorrealistas de arquitectura e interiorismo, potenciados por inteligencia artificial.",
+    "Muromío es un estudio de interiorismo en León, Guanajuato. Diseñamos espacios residenciales, comerciales y de hospitalidad, y exploramos renders con IA en nuestro Render Lab.",
 };
 
 export default function RootLayout({
@@ -26,10 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${fraunces.variable} ${geistSans.variable}`}>
-      <body className="bg-background text-foreground font-sans antialiased">
-        {children}
-      </body>
+    <html
+      lang="es"
+      className={`${jost.variable} ${lora.variable} ${spaceGrotesk.variable}`}
+    >
+      <body>{children}</body>
     </html>
   );
 }
