@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "./login-form";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
+  const { mode } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,7 +48,7 @@ export default async function LoginPage() {
       >
         muromío
       </Link>
-      <LoginForm />
+      <LoginForm initialMode={mode === "register" ? "register" : "login"} />
     </main>
   );
 }

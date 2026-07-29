@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export function LoginForm() {
-  const [mode, setMode] = useState<"login" | "register">("login");
+export function LoginForm({ initialMode = "login" }: { initialMode?: "login" | "register" }) {
+  const [mode, setMode] = useState<"login" | "register">(initialMode);
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
 
