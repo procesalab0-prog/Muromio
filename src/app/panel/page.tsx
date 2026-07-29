@@ -117,6 +117,9 @@ export default async function PanelPage() {
                     <Link href={`/panel/nuevo-render?sourceRenderId=${project.renders[0].id}`} style={projectActionStyle}>
                       Crear variación
                     </Link>
+                    <Link href={`/panel/render/${project.renders[0].id}/editar`} style={projectActionStyle}>
+                      Editar zona
+                    </Link>
                   </div>
                 ) : (
                   <p style={{ margin: "16px 0 0", color: "#817770", fontSize: 12 }}>

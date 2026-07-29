@@ -52,4 +52,6 @@ variable privada del servidor. Los usuarios autenticados pueden abrir
 proyecto de Supabase. Los archivos originales y resultados se guardan en el
 bucket privado `render-assets`; el panel crea enlaces temporales para descargar
 los resultados y permite generar una nueva variación desde el render más
-reciente de cada proyecto.
+reciente de cada proyecto. La acción **Editar zona** abre un editor de máscara
+manual y utiliza Stability Inpaint para modificar solamente el área pintada,
+guardando el resultado como una versión nueva.
