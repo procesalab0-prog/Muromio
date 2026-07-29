@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Jost, Lora, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -24,6 +24,16 @@ export const metadata: Metadata = {
   title: "Muromío — Estudio de interiorismo en León, Guanajuato",
   description:
     "Muromío es un estudio de interiorismo en León, Guanajuato. Diseñamos espacios residenciales, comerciales y de hospitalidad, y exploramos renders con IA en nuestro Render Lab.",
+  applicationName: "Muromío",
+  appleWebApp: {
+    capable: true,
+    title: "Muromío",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#262220",
 };
 
 export default function RootLayout({
