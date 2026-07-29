@@ -169,6 +169,14 @@ img {
   object-position: center;
 }
 
+.hero-background-poster {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity 0.7s ease;
+  pointer-events: none;
+}
+
 @media (max-width: 900px) {
   [data-hero] {
     min-height: 92vh !important;

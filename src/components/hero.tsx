@@ -1,43 +1,87 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import { makeTranslate, type Lang } from "@/lib/lang";
 
 export function Hero({ lang }: { lang: Lang }) {
   const t = makeTranslate(lang);
-  const resumeBackgroundVideo = (video: HTMLVideoElement) => {
+  const heroRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const posterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    const video = videoRef.current;
+    const poster = posterRef.current;
+    if (!hero || !video || !poster) return;
+
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!reduceMotion && document.visibilityState === "visible" && !video.ended) {
-      void video.play().catch(() => {
-        // The poster remains visible when a browser explicitly blocks autoplay.
-      });
-    }
-  };
+    let ticking = false;
+
+    const syncVideoWithScroll = () => {
+      ticking = false;
+      const atTop = window.scrollY <= 8;
+      const heroVisible = hero.getBoundingClientRect().bottom > 0;
+
+      if (atTop || reduceMotion) {
+        poster.style.opacity = "1";
+        video.pause();
+        if (video.currentTime > 0.05) video.currentTime = 0;
+        return;
+      }
+
+      poster.style.opacity = "0";
+      if (heroVisible && video.paused) {
+        void video.play().catch(() => {
+          poster.style.opacity = "1";
+        });
+      } else if (!heroVisible && !video.paused) {
+        video.pause();
+      }
+    };
+
+    const requestSync = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(syncVideoWithScroll);
+      }
+    };
+
+    window.addEventListener("scroll", requestSync, { passive: true });
+    syncVideoWithScroll();
+
+    return () => {
+      window.removeEventListener("scroll", requestSync);
+      video.pause();
+    };
+  }, []);
 
   return (
-    <header id="top" data-hero style={{ position: "relative", minHeight: "100vh", overflow: "hidden", background: "#211C19" }}>
+    <header ref={heroRef} id="top" data-hero style={{ position: "relative", minHeight: "100vh", overflow: "hidden", background: "#211C19" }}>
       <div data-heroimg style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
-        <Image
-          src="/images/IMG_5479.jpg"
-          alt="Interior diseñado por Muromío"
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectFit: "cover" }}
-        />
         <video
+          ref={videoRef}
           className="hero-background-video"
-          autoPlay
           loop
           muted
           playsInline
           preload="auto"
           poster="/images/IMG_5479.jpg"
           aria-hidden="true"
-          onCanPlay={(event) => resumeBackgroundVideo(event.currentTarget)}
-          onPause={(event) => resumeBackgroundVideo(event.currentTarget)}
-          onStalled={(event) => resumeBackgroundVideo(event.currentTarget)}
         >
           <source src="/videos/muromio-hero.mp4" type="video/mp4" />
         </video>
+        <div ref={posterRef} className="hero-background-poster">
+          <Image
+            src="/images/IMG_5479.jpg"
+            alt="Interior diseñado por Muromío"
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: "cover" }}
+          />
+        </div>
       </div>
       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(180deg,rgba(20,16,14,.62) 0%,rgba(20,16,14,.14) 30%,rgba(20,16,14,.14) 55%,rgba(20,16,14,.66) 100%)" }} />
       <div data-hero-inner style={{ position: "relative", zIndex: 3, minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 clamp(24px,5vw,80px)" }}>
