@@ -115,6 +115,10 @@ img {
   [data-navlinks] a {
     display: none !important;
   }
+  [data-navlinks] [data-login] {
+    display: inline-flex !important;
+    padding-inline: 11px !important;
+  }
   [data-svcgrid] {
     grid-template-columns: 1fr !important;
   }

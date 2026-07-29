@@ -27,3 +27,18 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 La parte de autenticación e integración con APIs de generación de renders
 se está desarrollando por separado.
+
+## Supabase
+
+La autenticación y el espacio de trabajo usan Supabase SSR con sesiones en
+cookies. Para configurarlo localmente:
+
+1. Copia `.env.example` como `.env.local`.
+2. Añade la URL y la clave pública del proyecto de Supabase.
+3. Aplica `supabase/migrations/20260728193000_initial_schema.sql`.
+4. Crea un usuario en Supabase Auth y abre `/login`.
+
+La migración crea perfiles, proyectos, referencias y renders. Todas las tablas
+tienen Row Level Security para limitar los datos al propietario del proyecto.
+La clave `service_role` no es necesaria y nunca debe exponerse en variables
+`NEXT_PUBLIC_*`.

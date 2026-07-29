@@ -67,6 +67,26 @@ export function SiteNav({ lang, onToggleLang }: { lang: Lang; onToggleLang: () =
           <span style={{ opacity: 0.4 }}>/</span>
           <span style={{ opacity: lang === "en" ? 1 : 0.4 }}>EN</span>
         </button>
+        <a
+          href="/login"
+          data-login
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 34,
+            padding: "6px 14px",
+            border: "1px solid rgba(38,34,32,.35)",
+            borderRadius: 40,
+            fontSize: 11,
+            letterSpacing: ".14em",
+            textTransform: "uppercase",
+            color: "#262220",
+            textDecoration: "none",
+          }}
+        >
+          {t("Iniciar sesión", "Sign in")}
+        </a>
       </div>
     </nav>
   );
