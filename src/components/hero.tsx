@@ -12,8 +12,20 @@ export function Hero({ lang }: { lang: Lang }) {
           fill
           priority
           sizes="100vw"
-          style={{ objectFit: "cover", animation: "kenLoop 20s ease-in-out infinite alternate" }}
+          style={{ objectFit: "cover" }}
         />
+        <video
+          className="hero-background-video"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          poster="/images/IMG_5479.jpg"
+          aria-hidden="true"
+        >
+          <source src="/videos/muromio-hero.mp4" type="video/mp4" />
+        </video>
       </div>
       <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(180deg,rgba(20,16,14,.62) 0%,rgba(20,16,14,.14) 30%,rgba(20,16,14,.14) 55%,rgba(20,16,14,.66) 100%)" }} />
       <div data-hero-inner style={{ position: "relative", zIndex: 3, minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 clamp(24px,5vw,80px)" }}>

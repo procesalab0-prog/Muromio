@@ -160,6 +160,15 @@ img {
   to { transform: scale(1.09); }
 }
 
+.hero-background-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 @media (max-width: 900px) {
   [data-hero] {
     min-height: 92vh !important;
@@ -247,5 +256,9 @@ img {
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
+  }
+
+  .hero-background-video {
+    display: none;
   }
 }
