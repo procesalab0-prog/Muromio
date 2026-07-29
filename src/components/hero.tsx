@@ -3,6 +3,15 @@ import { makeTranslate, type Lang } from "@/lib/lang";
 
 export function Hero({ lang }: { lang: Lang }) {
   const t = makeTranslate(lang);
+  const resumeBackgroundVideo = (video: HTMLVideoElement) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduceMotion && document.visibilityState === "visible" && !video.ended) {
+      void video.play().catch(() => {
+        // The poster remains visible when a browser explicitly blocks autoplay.
+      });
+    }
+  };
+
   return (
     <header id="top" data-hero style={{ position: "relative", minHeight: "100vh", overflow: "hidden", background: "#211C19" }}>
       <div data-heroimg style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
@@ -20,9 +29,12 @@ export function Hero({ lang }: { lang: Lang }) {
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           poster="/images/IMG_5479.jpg"
           aria-hidden="true"
+          onCanPlay={(event) => resumeBackgroundVideo(event.currentTarget)}
+          onPause={(event) => resumeBackgroundVideo(event.currentTarget)}
+          onStalled={(event) => resumeBackgroundVideo(event.currentTarget)}
         >
           <source src="/videos/muromio-hero.mp4" type="video/mp4" />
         </video>
