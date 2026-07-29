@@ -53,6 +53,37 @@ img {
   max-width: 100%;
 }
 
+[data-navink] {
+  position: relative;
+}
+
+[data-navink]::after {
+  position: absolute;
+  right: 0;
+  bottom: -5px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.45s cubic-bezier(.16,.84,.24,1);
+}
+
+[data-navink]:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+[data-projinfo] h3 {
+  transition: color .4s ease, transform .55s cubic-bezier(.16,.84,.24,1);
+}
+
+[data-proj]:hover [data-projinfo] h3 {
+  color: var(--rust);
+  transform: translateX(8px);
+}
+
 .deployment-version {
   position: fixed;
   right: 12px;

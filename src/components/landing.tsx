@@ -28,9 +28,18 @@ export function Landing({ version }: { version: string }) {
     if (!reduce) {
       reveals.forEach((el) => {
         const d = el.getAttribute("data-reveal");
+        const isHeading = /^H[1-3]$/.test(el.tagName);
         el.style.opacity = "0";
-        el.style.transform = d === "left" ? "translateX(-44px)" : d === "right" ? "translateX(44px)" : "translateY(52px)";
-        el.style.transition = "opacity 1s cubic-bezier(.16,.84,.24,1), transform 1.15s cubic-bezier(.16,.84,.24,1)";
+        el.style.transform = d === "left"
+          ? "translateX(-44px)"
+          : d === "right"
+            ? "translateX(44px)"
+            : isHeading
+              ? "translateY(72px) skewY(2deg)"
+              : "translateY(52px)";
+        el.style.filter = isHeading ? "blur(7px)" : "blur(2px)";
+        el.style.clipPath = isHeading ? "inset(0 0 105% 0)" : "none";
+        el.style.transition = "opacity 1s cubic-bezier(.16,.84,.24,1), transform 1.15s cubic-bezier(.16,.84,.24,1), filter 1s ease, clip-path 1.2s cubic-bezier(.16,.84,.24,1)";
         el.style.transitionDelay = `${el.getAttribute("data-delay") || "0"}ms`;
         el.style.willChange = "opacity, transform";
       });
@@ -41,6 +50,8 @@ export function Landing({ version }: { version: string }) {
               const target = entry.target as HTMLElement;
               target.style.opacity = "1";
               target.style.transform = "none";
+              target.style.filter = "none";
+              target.style.clipPath = "inset(0 0 0% 0)";
               io?.unobserve(target);
             }
           });
