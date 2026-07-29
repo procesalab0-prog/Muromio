@@ -20,7 +20,7 @@ export default async function NewRenderPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status")
+    .select("access_status,credit_balance,unlimited_credits")
     .eq("id", user.id)
     .single();
 
@@ -41,7 +41,11 @@ export default async function NewRenderPage({
           ? "Usaremos el render anterior como base para explorar otra dirección material sin perder su composición."
           : "Sube un plano, boceto o imagen base. Muromío conservará su estructura y aplicará la dirección material que elijas."}
       </p>
-      <RenderForm sourceRenderId={sourceRenderId} />
+      <RenderForm
+        sourceRenderId={sourceRenderId}
+        initialCredits={profile.credit_balance ?? 0}
+        unlimitedCredits={profile.unlimited_credits ?? false}
+      />
     </main>
   );
 }

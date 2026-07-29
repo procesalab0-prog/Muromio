@@ -22,7 +22,7 @@ const SERVICES = [
 export function Servicios({ lang }: { lang: Lang }) {
   const t = makeTranslate(lang);
   return (
-    <section id="servicios" style={{ padding: "clamp(96px,15vh,190px) clamp(24px,6vw,120px)", background: "#EFE7DC" }}>
+    <section id="servicios" style={{ padding: "clamp(90px,15vh,180px) clamp(24px,6vw,120px)", background: "#F6F1E9" }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: "clamp(50px,8vh,90px)" }}>
         <div>
           <div data-reveal style={{ fontSize: 12, letterSpacing: ".26em", textTransform: "uppercase", color: "#9E4B3D", marginBottom: 18 }}>
@@ -33,9 +33,9 @@ export function Servicios({ lang }: { lang: Lang }) {
             data-delay="80"
             style={{
               margin: 0,
-              fontFamily: "var(--font-space-grotesk)",
-              fontWeight: 500,
-              fontSize: "clamp(36px,5vw,72px)",
+              fontFamily: "var(--font-cormorant)",
+              fontWeight: 600,
+              fontSize: "clamp(36px,5vw,74px)",
               lineHeight: 1,
               letterSpacing: "-.035em",
               color: "#262220",
@@ -60,15 +60,15 @@ export function Servicios({ lang }: { lang: Lang }) {
             data-delay={i % 2 === 1 ? "90" : undefined}
             style={{ background: "#F6F1E9", padding: "clamp(34px,4vw,56px)", minHeight: 230, display: "flex", flexDirection: "column", justifyContent: "space-between" }}
           >
-            <span style={{ fontFamily: "var(--font-space-grotesk)", color: "#9E4B3D", fontSize: 26 }}>
+            <span style={{ fontFamily: "var(--font-cormorant)", fontStyle: "italic", color: "#9E4B3D", fontSize: 26 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
             <div>
               <h3
                 style={{
                   margin: "0 0 12px",
-                  fontFamily: "var(--font-space-grotesk)",
-                  fontWeight: 500,
+                  fontFamily: "var(--font-cormorant)",
+                  fontWeight: 600,
                   fontSize: "clamp(24px,2.6vw,34px)",
                   color: "#262220",
                 }}

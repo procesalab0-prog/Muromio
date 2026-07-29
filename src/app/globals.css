@@ -21,6 +21,7 @@
   --font-sans: var(--font-jost);
   --font-serif: var(--font-lora);
   --font-display: var(--font-space-grotesk);
+  --font-editorial: var(--font-cormorant);
 }
 
 * {
@@ -50,6 +51,37 @@ body {
 img {
   display: block;
   max-width: 100%;
+}
+
+[data-navink] {
+  position: relative;
+}
+
+[data-navink]::after {
+  position: absolute;
+  right: 0;
+  bottom: -5px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.45s cubic-bezier(.16,.84,.24,1);
+}
+
+[data-navink]:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+[data-projinfo] h3 {
+  transition: color .4s ease, transform .55s cubic-bezier(.16,.84,.24,1);
+}
+
+[data-proj]:hover [data-projinfo] h3 {
+  color: var(--rust);
+  transform: translateX(8px);
 }
 
 .deployment-version {
@@ -105,17 +137,70 @@ img {
   }
 }
 
+@keyframes nameUp {
+  from {
+    opacity: 0;
+    transform: translateY(46px);
+    clip-path: inset(0 0 108% 0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 -8% 0);
+  }
+}
+
+@keyframes kenLoop {
+  from { transform: scale(1.03); }
+  to { transform: scale(1.12); }
+}
+
+@keyframes kenburns {
+  from { transform: scale(1.001); }
+  to { transform: scale(1.09); }
+}
+
+.hero-background-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-background-poster {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity 0.7s ease;
+  pointer-events: none;
+}
+
 @media (max-width: 900px) {
   [data-hero] {
-    grid-template-columns: 1fr !important;
-    min-height: auto !important;
+    min-height: 92vh !important;
   }
   [data-heroimg] {
-    height: 64vh !important;
-    order: -1;
+    height: 100% !important;
   }
-  [data-herotext] {
-    padding: 120px 24px 64px !important;
+  [data-hero-inner] {
+    min-height: 92vh !important;
+    padding-top: 120px !important;
+    padding-bottom: 150px !important;
+  }
+  [data-hero-tr] {
+    right: 24px !important;
+    left: 24px !important;
+    bottom: 52px !important;
+    max-width: 360px !important;
+    text-align: left !important;
+  }
+  [data-hero-name] {
+    max-width: 100%;
+    font-size: clamp(62px, 21vw, 112px) !important;
+    letter-spacing: -0.035em !important;
+    white-space: nowrap;
   }
   [data-sticky] {
     grid-template-columns: 1fr !important;
@@ -133,6 +218,20 @@ img {
   [data-two] {
     grid-template-columns: 1fr !important;
   }
+  [data-proj] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-projinfo] {
+    order: 2 !important;
+    padding: 34px 24px 44px !important;
+  }
+  [data-projimg] {
+    order: 1 !important;
+    min-height: 64vh !important;
+  }
+  [data-statsgrid] {
+    grid-template-columns: 1fr !important;
+  }
   [data-navlinks] a {
     display: none !important;
   }
@@ -145,8 +244,29 @@ img {
   }
 }
 
+@media (max-width: 640px) {
+  .access-request-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .access-request-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .access-request-actions form,
+  .access-request-actions button {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
+  }
+
+  .hero-background-video {
+    display: none;
   }
 }

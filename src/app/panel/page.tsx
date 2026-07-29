@@ -22,7 +22,7 @@ export default async function PanelPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role,access_status")
+    .select("role,access_status,credit_balance,unlimited_credits,credits_spent,estimated_usd")
     .eq("id", user.id)
     .single();
 
@@ -65,6 +65,10 @@ export default async function PanelPage() {
             Tus proyectos
           </h1>
           <p style={{ color: "#655d58" }}>{user.email}</p>
+          <p style={{ margin: "8px 0 0", color: "var(--rust)", fontSize: 13 }}>
+            {profile.unlimited_credits ? "Créditos sin límite" : `${profile.credit_balance ?? 0} créditos disponibles`}
+            {profile.role === "admin" ? ` · ${profile.credits_spent ?? 0} usados · $${Number(profile.estimated_usd ?? 0).toFixed(2)} USD cobrados` : ""}
+          </p>
         </div>
         <form action="/auth/signout" method="post">
           <button

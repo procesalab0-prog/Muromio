@@ -5,8 +5,7 @@ import type { Lang } from "@/lib/lang";
 import { SiteNav } from "./site-nav";
 import { Hero } from "./hero";
 import { Estudio } from "./estudio";
-import { ProyectoDestacado } from "./proyecto-destacado";
-import { Galeria } from "./galeria";
+import { SelectedProjects } from "./selected-projects";
 import { Servicios } from "./servicios";
 import { Marquee } from "./marquee";
 import { RenderLab } from "./render-lab";
@@ -23,13 +22,24 @@ export function Landing({ version }: { version: string }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const reveals = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const imageReveals = Array.from(root.querySelectorAll<HTMLElement>("[data-img-reveal]"));
     let io: IntersectionObserver | undefined;
+    let imageIo: IntersectionObserver | undefined;
     if (!reduce) {
       reveals.forEach((el) => {
         const d = el.getAttribute("data-reveal");
+        const isHeading = /^H[1-3]$/.test(el.tagName);
         el.style.opacity = "0";
-        el.style.transform = d === "left" ? "translateX(-44px)" : d === "right" ? "translateX(44px)" : "translateY(52px)";
-        el.style.transition = "opacity 1s cubic-bezier(.16,.84,.24,1), transform 1.15s cubic-bezier(.16,.84,.24,1)";
+        el.style.transform = d === "left"
+          ? "translateX(-44px)"
+          : d === "right"
+            ? "translateX(44px)"
+            : isHeading
+              ? "translateY(72px) skewY(2deg)"
+              : "translateY(52px)";
+        el.style.filter = isHeading ? "blur(7px)" : "blur(2px)";
+        el.style.clipPath = isHeading ? "inset(0 0 105% 0)" : "none";
+        el.style.transition = "opacity 1s cubic-bezier(.16,.84,.24,1), transform 1.15s cubic-bezier(.16,.84,.24,1), filter 1s ease, clip-path 1.2s cubic-bezier(.16,.84,.24,1)";
         el.style.transitionDelay = `${el.getAttribute("data-delay") || "0"}ms`;
         el.style.willChange = "opacity, transform";
       });
@@ -40,6 +50,8 @@ export function Landing({ version }: { version: string }) {
               const target = entry.target as HTMLElement;
               target.style.opacity = "1";
               target.style.transform = "none";
+              target.style.filter = "none";
+              target.style.clipPath = "inset(0 0 0% 0)";
               io?.unobserve(target);
             }
           });
@@ -47,9 +59,27 @@ export function Landing({ version }: { version: string }) {
         { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
       );
       reveals.forEach((el) => io!.observe(el));
+      imageReveals.forEach((el) => {
+        el.style.clipPath = "inset(0 0 100% 0)";
+        el.style.transition = "clip-path 1.15s cubic-bezier(.16,.84,.24,1)";
+      });
+      imageIo = new IntersectionObserver(
+        (entries) => entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (entry.target as HTMLElement).style.clipPath = "inset(0 0 0% 0)";
+            imageIo?.unobserve(entry.target);
+          }
+        }),
+        { threshold: .16, rootMargin: "0px 0px -5% 0px" },
+      );
+      imageReveals.forEach((el) => imageIo!.observe(el));
     }
 
     const nav = root.querySelector<HTMLElement>("[data-nav]");
+    const navInks = Array.from(root.querySelectorAll<HTMLElement>("[data-navink]"));
+    const logoA = root.querySelector<HTMLElement>("[data-logo-a]");
+    const logoB = root.querySelector<HTMLElement>("[data-logo-b]");
+    const langButton = root.querySelector<HTMLElement>("[data-langtoggle]");
     const parallax = Array.from(root.querySelectorAll<HTMLElement>("[data-parallax]"));
     const hWrap = root.querySelector<HTMLElement>("[data-hscroll]");
     const hTrack = root.querySelector<HTMLElement>("[data-htrack]");
@@ -65,13 +95,21 @@ export function Landing({ version }: { version: string }) {
       const vw = window.innerWidth;
 
       if (nav) {
-        const scrolled = y > 60;
+        const scrolled = y > vh * 0.72;
         nav.style.background = scrolled ? "rgba(239,231,220,0.82)" : "transparent";
         nav.style.setProperty("backdrop-filter", scrolled ? "blur(16px)" : "none");
         nav.style.setProperty("-webkit-backdrop-filter", scrolled ? "blur(16px)" : "none");
         nav.style.borderBottomColor = scrolled ? "rgba(38,34,32,0.08)" : "transparent";
-        nav.style.paddingTop = scrolled ? "13px" : "20px";
-        nav.style.paddingBottom = scrolled ? "13px" : "20px";
+        nav.style.paddingTop = scrolled ? "14px" : "22px";
+        nav.style.paddingBottom = scrolled ? "14px" : "22px";
+        const navColor = scrolled ? "#3A332E" : "#EBE2D6";
+        navInks.forEach((link) => { link.style.color = navColor; });
+        if (logoA) logoA.style.color = scrolled ? "#262220" : "#F1E8DC";
+        if (logoB) logoB.style.color = scrolled ? "#262220" : "#F1E8DC";
+        if (langButton) {
+          langButton.style.color = navColor;
+          langButton.style.borderColor = scrolled ? "rgba(38,34,32,.24)" : "rgba(241,232,220,.4)";
+        }
       }
 
       if (!reduce) {
@@ -117,6 +155,7 @@ export function Landing({ version }: { version: string }) {
       window.removeEventListener("scroll", requestTick);
       window.removeEventListener("resize", requestTick);
       io?.disconnect();
+      imageIo?.disconnect();
     };
   }, []);
 
@@ -178,8 +217,7 @@ export function Landing({ version }: { version: string }) {
       />
       <Hero lang={lang} />
       <Estudio lang={lang} />
-      <ProyectoDestacado lang={lang} />
-      <Galeria lang={lang} />
+      <SelectedProjects lang={lang} />
       <Servicios lang={lang} />
       <Marquee />
       <RenderLab lang={lang} />

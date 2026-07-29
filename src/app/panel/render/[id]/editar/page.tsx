@@ -18,7 +18,7 @@ export default async function EditRenderPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status")
+    .select("access_status,credit_balance,unlimited_credits")
     .eq("id", user.id)
     .single();
 
@@ -54,7 +54,12 @@ export default async function EditRenderPage({
         {project?.name ? `${project.name} · ` : ""}
         Pinta sobre la zona que quieres cambiar y describe el nuevo material, color u objeto.
       </p>
-      <InpaintEditor sourceRenderId={render.id} imageUrl={signed.signedUrl} />
+      <InpaintEditor
+        sourceRenderId={render.id}
+        imageUrl={signed.signedUrl}
+        initialCredits={profile.credit_balance ?? 0}
+        unlimitedCredits={profile.unlimited_credits ?? false}
+      />
     </main>
   );
 }

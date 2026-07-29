@@ -44,6 +44,13 @@ export async function POST(request: Request) {
   const needsMask = action === "inpaint" || action === "erase";
   const needsObject = action === "recolor" || action === "replace";
 
+  if (provider === "gemini") {
+    return NextResponse.json(
+      { error: "Gemini estará disponible próximamente. Por ahora usa Stability." },
+      { status: 409 },
+    );
+  }
+
   if (!sourceRenderId || (action !== "erase" && !requestedChange)) {
     return NextResponse.json({ error: "Describe el cambio que quieres realizar." }, { status: 400 });
   }
@@ -96,6 +103,22 @@ export async function POST(request: Request) {
 
   if (renderError || !render) {
     return NextResponse.json({ error: "No pudimos registrar la edición." }, { status: 500 });
+  }
+
+  const creditCost = 5;
+  const { data: creditResult, error: creditError } = await supabase
+    .rpc("spend_render_credits", {
+      p_amount: creditCost,
+      p_operation: `Edición Stability: ${action}`,
+    })
+    .single();
+
+  if (creditError) {
+    await supabase.from("renders").update({ status: "failed", error_message: "Créditos insuficientes." }).eq("id", render.id);
+    return NextResponse.json(
+      { error: creditError.message.includes("insufficient") ? "No tienes créditos suficientes para esta edición." : "No pudimos comprobar tu saldo de créditos." },
+      { status: 402 },
+    );
   }
 
   try {
@@ -154,9 +177,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       renderId: render.id,
       image: `data:${outputType};base64,${base64}`,
+      credits: creditResult,
     });
   } catch (error) {
     console.error(error);
+    await supabase.rpc("refund_render_credits", {
+      p_amount: creditCost,
+      p_operation: `Edición fallida: ${action}`,
+    });
     const publicError = getPublicEditError(error);
     await supabase
       .from("renders")
