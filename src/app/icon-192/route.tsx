@@ -1,5 +1,5 @@
-import { renderAppIcon } from "@/lib/app-icon";
+import { renderWordmarkIcon } from "@/lib/app-icon";
 
-export function GET() {
-  return renderAppIcon(192);
+export async function GET() {
+  return renderWordmarkIcon(192);
 }
