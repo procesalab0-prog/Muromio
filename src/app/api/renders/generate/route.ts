@@ -45,6 +45,18 @@ export async function POST(request: Request) {
     .filter(Boolean)
     .join(" ");
 
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({ id: user.id }, { onConflict: "id", ignoreDuplicates: true });
+
+  if (profileError) {
+    console.error("Could not ensure user profile", profileError);
+    return NextResponse.json(
+      { error: "No pudimos preparar tu perfil. Intenta cerrar sesión y entrar de nuevo." },
+      { status: 500 },
+    );
+  }
+
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .insert({ owner_id: user.id, name: projectName })
@@ -52,6 +64,7 @@ export async function POST(request: Request) {
     .single();
 
   if (projectError || !project) {
+    console.error("Could not create project", projectError);
     return NextResponse.json({ error: "No pudimos crear el proyecto." }, { status: 500 });
   }
 
@@ -67,6 +80,7 @@ export async function POST(request: Request) {
     .single();
 
   if (renderError || !render) {
+    console.error("Could not create render record", renderError);
     return NextResponse.json({ error: "No pudimos registrar el render." }, { status: 500 });
   }
 
