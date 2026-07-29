@@ -16,11 +16,11 @@ export function RenderLab({ lang }: { lang: Lang }) {
             data-delay="80"
             style={{
               margin: "0 0 24px",
-              fontFamily: "var(--font-space-grotesk)",
-              fontWeight: 500,
+              fontFamily: "var(--font-cormorant)",
+              fontWeight: 600,
               fontSize: "clamp(38px,5vw,72px)",
               lineHeight: 1.02,
-              letterSpacing: "-.035em",
+              letterSpacing: "-.01em",
               color: "#F1E8DC",
             }}
           >
@@ -35,7 +35,7 @@ export function RenderLab({ lang }: { lang: Lang }) {
           <div data-reveal data-delay="210">
             <HoverLink
               href="/login?mode=register"
-              base={{ display: "inline-block", background: "#EFE7DC", color: "#262220", padding: "16px 32px", borderRadius: 2, fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase" }}
+              base={{ display: "inline-block", background: "#EFE7DC", color: "#262220", padding: "16px 32px", borderRadius: 40, fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase" }}
               hover={{ background: "#9E4B3D", color: "#F6F1E9" }}
             >
               {t("Solicitar acceso →", "Request access →")}
@@ -45,7 +45,7 @@ export function RenderLab({ lang }: { lang: Lang }) {
 
         <div data-imgwrap style={{ position: "relative", overflow: "hidden", minHeight: "60vh" }}>
           <div data-parallax="0.05" style={{ position: "absolute", inset: "-8% 0" }}>
-            <Image src="/images/IMG_5458.jpeg" alt="" fill sizes="(max-width: 900px) 100vw, 50vw" style={{ objectFit: "cover" }} />
+            <Image src="/images/IMG_5488.jpeg" alt="" fill sizes="(max-width: 900px) 100vw, 50vw" style={{ objectFit: "cover" }} />
           </div>
         </div>
       </div>

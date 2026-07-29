@@ -52,8 +52,8 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <a href="mailto:hola@muromio.mx" style={{ color: "#B3A79B", fontSize: 15 }}>
               hola@muromio.mx
             </a>
-            <a href="https://instagram.com/muromio" target="_blank" rel="noopener" style={{ color: "#B3A79B", fontSize: 15 }}>
-              Instagram
+            <a href="https://instagram.com/bymuromio" target="_blank" rel="noopener" style={{ color: "#B3A79B", fontSize: 15 }}>
+              @bymuromio
             </a>
             <span style={{ color: "#8E837A", fontSize: 15 }}>León, Gto. · MX</span>
           </div>

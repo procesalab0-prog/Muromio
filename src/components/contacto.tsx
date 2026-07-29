@@ -14,9 +14,9 @@ export function Contacto({ lang }: { lang: Lang }) {
         style={{
           margin: "0 auto",
           maxWidth: 900,
-          fontFamily: "var(--font-space-grotesk)",
-          fontWeight: 500,
-          fontSize: "clamp(44px,7vw,110px)",
+          fontFamily: "var(--font-cormorant)",
+          fontWeight: 600,
+          fontSize: "clamp(44px,7vw,112px)",
           lineHeight: 1,
           letterSpacing: "-.015em",
           color: "#F6F1E9",
@@ -33,19 +33,19 @@ export function Contacto({ lang }: { lang: Lang }) {
       <div data-reveal data-delay="210" style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center" }}>
         <HoverLink
           href="mailto:hola@muromio.mx"
-          base={{ background: "#F6F1E9", color: "#262220", padding: "17px 36px", borderRadius: 2, fontSize: 13, letterSpacing: ".14em", textTransform: "uppercase" }}
+          base={{ background: "#F6F1E9", color: "#262220", padding: "17px 36px", borderRadius: 40, fontSize: 13, letterSpacing: ".14em", textTransform: "uppercase" }}
           hover={{ background: "#262220", color: "#F6F1E9" }}
         >
           hola@muromio.mx
         </HoverLink>
         <HoverLink
-          href="https://instagram.com/muromio"
+          href="https://instagram.com/bymuromio"
           target="_blank"
           rel="noopener"
           base={{ color: "#F6F1E9", padding: "17px 8px", fontSize: 13, letterSpacing: ".14em", textTransform: "uppercase", borderBottom: "1px solid rgba(246,241,233,.5)" }}
           hover={{ borderBottom: "1px solid #F6F1E9" }}
         >
-          {t("Instagram →", "Instagram →")}
+          @bymuromio →
         </HoverLink>
       </div>
     </section>

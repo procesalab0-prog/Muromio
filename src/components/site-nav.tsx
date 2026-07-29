@@ -38,7 +38,7 @@ export function SiteNav({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "20px clamp(20px,5vw,64px)",
+        padding: "22px clamp(20px,5vw,64px)",
         borderBottom: "1px solid transparent",
         transition: "background .5s ease,border-color .5s ease,padding .5s ease,backdrop-filter .5s ease",
       }}
@@ -47,10 +47,10 @@ export function SiteNav({
         href="#top"
         aria-label="Muromío"
         onClick={handleLogoTouch}
-        style={{ display: "flex", alignItems: "baseline", textDecoration: "none", fontSize: 27, lineHeight: 1, letterSpacing: "-.02em" }}
+        style={{ display: "flex", alignItems: "baseline", textDecoration: "none", fontSize: 26, lineHeight: 1, letterSpacing: "-.02em" }}
       >
-        <span style={{ fontFamily: "var(--font-lora)", fontWeight: 600, color: "#262220" }}>muro</span>
-        <span style={{ fontFamily: "var(--font-jost)", fontWeight: 300, color: "#262220" }}>mío</span>
+        <span data-logo-a style={{ fontFamily: "var(--font-lora)", fontWeight: 600, color: "#F1E8DC", transition: "color .4s" }}>muro</span>
+        <span data-logo-b style={{ fontFamily: "var(--font-jost)", fontWeight: 300, color: "#F1E8DC", transition: "color .4s" }}>mío</span>
       </a>
 
       {showEasterEgg ? (
@@ -98,11 +98,13 @@ export function SiteNav({
           <a
             key={link.href}
             href={link.href}
+            data-navink
             style={{
-              fontSize: 12,
+              fontSize: 11.5,
               letterSpacing: ".2em",
               textTransform: "uppercase",
-              color: link.accent ? "#9E4B3D" : "#3A332E",
+              color: "#EBE2D6",
+              transition: "color .4s",
             }}
           >
             {t(link.es, link.en)}
@@ -124,7 +126,8 @@ export function SiteNav({
             fontFamily: "inherit",
             fontSize: 11,
             letterSpacing: ".14em",
-            color: "#3A332E",
+            color: "#F1E8DC",
+            transition: "color .4s,border-color .4s",
           }}
         >
           <span style={{ opacity: lang === "es" ? 1 : 0.4 }}>ES</span>
@@ -134,18 +137,20 @@ export function SiteNav({
         <a
           href="/login"
           data-login
+          data-navink
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             minHeight: 34,
             padding: "6px 14px",
-            border: "1px solid rgba(38,34,32,.35)",
-            borderRadius: 40,
+            border: 0,
+            borderBottom: "1px solid rgba(241,232,220,.55)",
+            borderRadius: 0,
             fontSize: 11,
             letterSpacing: ".14em",
             textTransform: "uppercase",
-            color: "#262220",
+            color: "#F1E8DC",
             textDecoration: "none",
           }}
         >
