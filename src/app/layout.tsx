@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Jost, Lora, Space_Grotesk } from "next/font/google";
+import { DeploymentVersion } from "@/components/deployment-version";
 import "./globals.css";
 
 const jost = Jost({
@@ -36,7 +37,10 @@ export default function RootLayout({
       lang="es"
       className={`${jost.variable} ${lora.variable} ${spaceGrotesk.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <DeploymentVersion />
+      </body>
     </html>
   );
 }
