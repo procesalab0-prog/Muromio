@@ -21,13 +21,40 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
-    setMessage("Generando propuesta… puede tardar hasta un minuto.");
+    setMessage(mode === "style-transfer" ? "Preparando imágenes…" : "Generando propuesta…");
     setResult("");
 
     try {
+      const body = new FormData(event.currentTarget);
+      if (mode === "style-transfer") {
+        const image = body.get("image");
+        const styleImage = body.get("styleImage");
+        const optimizedImage = image instanceof File && image.size
+          ? await optimizeImage(image, 1400, 0.82)
+          : null;
+        let optimizedStyle = styleImage instanceof File && styleImage.size
+          ? await optimizeImage(styleImage, 1400, 0.82)
+          : null;
+
+        if (optimizedImage) body.set("image", optimizedImage);
+        if (optimizedStyle) body.set("styleImage", optimizedStyle);
+
+        const totalSize = (optimizedImage?.size ?? 0) + (optimizedStyle?.size ?? 0);
+        if (totalSize > 3.8 * 1024 * 1024) {
+          if (image instanceof File && image.size) {
+            body.set("image", await optimizeImage(image, 1100, 0.7));
+          }
+          if (styleImage instanceof File && styleImage.size) {
+            optimizedStyle = await optimizeImage(styleImage, 1100, 0.7);
+            body.set("styleImage", optimizedStyle);
+          }
+        }
+        setMessage("Transfiriendo el estilo… puede tardar varios minutos.");
+      }
+
       const response = await fetch("/api/renders/generate", {
         method: "POST",
-        body: new FormData(event.currentTarget),
+        body,
       });
       const data = await response.json().catch(() => ({}));
 
@@ -77,14 +104,14 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
           <label style={labelStyle}>
             Imagen base
             <input name="image" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
-            <small>PNG, JPG o WEBP · máximo 10 MB</small>
+            <small>PNG, JPG o WEBP · optimizamos el archivo automáticamente</small>
           </label>
         )}
         {mode === "style-transfer" ? (
           <label style={labelStyle}>
             Referencia de estilo Muromío
             <input name="styleImage" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
-            <small>Usaremos sus materiales, color e iluminación; la imagen base conservará su composición.</small>
+            <small>Usaremos sus materiales, color e iluminación; optimizaremos ambas imágenes antes de enviarlas.</small>
           </label>
         ) : null}
         <label style={labelStyle}>
@@ -171,3 +198,25 @@ const actionStyle = {
   textDecoration: "none",
   fontSize: 13,
 } as const;
+
+async function optimizeImage(file: File, maxDimension: number, quality: number) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(64, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(64, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    bitmap.close();
+    throw new Error("Canvas is not available");
+  }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/webp", quality);
+  });
+  if (!blob) throw new Error("Could not optimize image");
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, {
+    type: "image/webp",
+  });
+}
