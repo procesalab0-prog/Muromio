@@ -62,7 +62,7 @@ export default async function AccessRequestsPage() {
       <p style={{ color: "#655d58", marginBottom: 36 }}>Aprueba quién puede entrar a la prueba de Muromío.</p>
       <div style={{ display: "grid", gap: 12, maxWidth: 900 }}>
         {requests?.length ? requests.map((request) => (
-          <article key={request.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 20, alignItems: "center", padding: 22, background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
+          <article className="access-request-card" key={request.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 20, alignItems: "center", padding: 22, background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
             <div>
               <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-lora)", fontWeight: 500 }}>{request.full_name || "Sin nombre"}</h2>
               <p style={{ margin: 0, color: "#655d58" }}>{request.email}</p>
@@ -73,10 +73,10 @@ export default async function AccessRequestsPage() {
               <p style={{ margin: "10px 0 0", fontSize: 13, color: "#655d58" }}>
                 {request.unlimited_credits ? "Sin límite" : `${request.credit_balance ?? 0} créditos restantes`}
                 {" · "}{request.credits_spent ?? 0} usados
-                {" · "}${Number(request.estimated_usd ?? 0).toFixed(2)} USD estimados
+                {" · "}${Number(request.estimated_usd ?? 0).toFixed(2)} USD cobrados
               </p>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="access-request-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <form action={reviewAccess}>
                 <input type="hidden" name="profileId" value={request.id} />
                 <input type="hidden" name="status" value="approved" />

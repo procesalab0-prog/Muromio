@@ -227,6 +227,23 @@ img {
   }
 }
 
+@media (max-width: 640px) {
+  .access-request-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .access-request-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .access-request-actions form,
+  .access-request-actions button {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
