@@ -11,9 +11,9 @@ const FIGURES = [
 ];
 
 const TRIO = [
-  { src: "/images/exterior-cocina.jpeg", width: 1320, height: 1074 },
-  { src: "/images/exterior-comedor.jpeg", width: 1320, height: 956 },
   { src: "/images/exterior-lounge.jpeg", width: 1320, height: 939 },
+  { src: "/images/exterior-comedor.jpeg", width: 1320, height: 956 },
+  { src: "/images/exterior-cocina.jpeg", width: 1320, height: 1074 },
 ];
 
 export function Galeria({ lang }: { lang: Lang }) {
