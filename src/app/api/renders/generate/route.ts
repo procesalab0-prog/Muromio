@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateRender, transferRenderStyle, type RenderMode } from "@/lib/renders/stability";
+import {
+  generateRender,
+  StabilityApiError,
+  transferRenderStyle,
+  type RenderMode,
+} from "@/lib/renders/stability";
 
 export const maxDuration = 300;
 
@@ -203,17 +208,37 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(error);
+    const publicError = getPublicGenerationError(error);
     await supabase
       .from("renders")
       .update({
         status: "failed",
-        error_message: "El proveedor no pudo completar la generación.",
+        error_message: publicError,
       })
       .eq("id", render.id);
 
     return NextResponse.json(
-      { error: "No fue posible generar el render. Intenta nuevamente." },
+      { error: publicError, diagnosticId: render.id },
       { status: 502 },
     );
   }
+}
+
+function getPublicGenerationError(error: unknown) {
+  if (error instanceof StabilityApiError) {
+    const messages: Record<number, string> = {
+      400: "Stability rechazó algún parámetro de la solicitud (código 400).",
+      402: "La cuenta de Stability no tiene créditos suficientes (código 402).",
+      403: "Stability bloqueó la solicitud por permisos o moderación (código 403).",
+      413: "Las imágenes juntas superan el límite de 10 MB de Stability (código 413).",
+      422: "Stability rechazó el formato o las dimensiones de una imagen (código 422).",
+      429: "Stability recibió demasiadas solicitudes. Espera un minuto (código 429).",
+      500: "Stability tuvo un error interno (código 500).",
+    };
+    return messages[error.status] ?? `Stability respondió con el código ${error.status}.`;
+  }
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+    return "Stability no respondió dentro de 4 minutos y 40 segundos.";
+  }
+  return "No fue posible generar el render. La referencia quedó guardada para diagnóstico.";
 }

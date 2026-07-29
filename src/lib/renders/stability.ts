@@ -4,6 +4,16 @@ const STABILITY_INPAINT_API = "https://api.stability.ai/v2beta/stable-image/edit
 
 export type RenderMode = "sketch" | "structure";
 
+export class StabilityApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly providerMessage: string,
+  ) {
+    super(`Stability returned ${status}`);
+    this.name = "StabilityApiError";
+  }
+}
+
 export async function generateRender({
   image,
   prompt,
@@ -41,7 +51,7 @@ export async function generateRender({
   if (!response.ok) {
     const providerMessage = await response.text();
     console.error("Stability generation failed", response.status, providerMessage);
-    throw new Error(`Stability returned ${response.status}`);
+    throw new StabilityApiError(response.status, providerMessage);
   }
 
   return Buffer.from(await response.arrayBuffer()).toString("base64");
@@ -85,7 +95,7 @@ export async function transferRenderStyle({
   if (!response.ok) {
     const providerMessage = await response.text();
     console.error("Stability style transfer failed", response.status, providerMessage);
-    throw new Error(`Stability returned ${response.status}`);
+    throw new StabilityApiError(response.status, providerMessage);
   }
 
   return Buffer.from(await response.arrayBuffer()).toString("base64");
@@ -128,7 +138,7 @@ export async function inpaintRender({
   if (!response.ok) {
     const providerMessage = await response.text();
     console.error("Stability inpaint failed", response.status, providerMessage);
-    throw new Error(`Stability returned ${response.status}`);
+    throw new StabilityApiError(response.status, providerMessage);
   }
 
   return Buffer.from(await response.arrayBuffer()).toString("base64");
