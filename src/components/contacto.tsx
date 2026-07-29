@@ -39,7 +39,7 @@ export function Contacto({ lang }: { lang: Lang }) {
           hola@muromio.mx
         </HoverLink>
         <HoverLink
-          href="https://instagram.com/bymuromio"
+          href="https://www.instagram.com/bymuromio?igsh=azU5ejNqeTd6Z2sx"
           target="_blank"
           rel="noopener"
           base={{ color: "#F6F1E9", padding: "17px 8px", fontSize: 13, letterSpacing: ".14em", textTransform: "uppercase", borderBottom: "1px solid rgba(246,241,233,.5)" }}
