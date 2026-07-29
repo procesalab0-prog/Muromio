@@ -65,16 +65,32 @@ export function Galeria({ lang }: { lang: Lang }) {
           <figure
             style={{ position: "relative", height: "62vh", flex: "0 0 auto", margin: 0, overflow: "hidden", display: "flex", borderRadius: 2 }}
           >
-            {TRIO.map((img) => (
-              <Image
-                key={img.src}
-                src={img.src}
-                alt=""
-                width={img.width}
-                height={img.height}
-                style={{ height: "100%", width: "auto", objectFit: "cover", display: "block" }}
-              />
-            ))}
+            {TRIO.map((img, i) => {
+              const fadeIn = i > 0;
+              const fadeOut = i < TRIO.length - 1;
+              const stops = [
+                fadeIn ? "transparent 0, black 64px" : "black 0",
+                fadeOut ? "black calc(100% - 64px), transparent 100%" : "black 100%",
+              ].join(", ");
+              const mask = `linear-gradient(to right, ${stops})`;
+              return (
+                <Image
+                  key={img.src}
+                  src={img.src}
+                  alt=""
+                  width={img.width}
+                  height={img.height}
+                  style={{
+                    height: "100%",
+                    width: "auto",
+                    objectFit: "cover",
+                    display: "block",
+                    maskImage: fadeIn || fadeOut ? mask : undefined,
+                    WebkitMaskImage: fadeIn || fadeOut ? mask : undefined,
+                  }}
+                />
+              );
+            })}
             <figcaption
               style={{ position: "absolute", left: 16, bottom: 14, color: "#F1E8DC", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase" }}
             >
