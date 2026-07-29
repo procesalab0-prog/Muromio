@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateRender, transferRenderStyle, type RenderMode } from "@/lib/renders/stability";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxFileSize = 10 * 1024 * 1024;

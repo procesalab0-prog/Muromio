@@ -79,7 +79,7 @@ export async function transferRenderStyle({
     },
     body,
     cache: "no-store",
-    signal: AbortSignal.timeout(110_000),
+    signal: AbortSignal.timeout(280_000),
   });
 
   if (!response.ok) {
