@@ -12,11 +12,20 @@ const styles = [
   "Industrial suave",
 ];
 
-export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
+export function RenderForm({
+  sourceRenderId,
+  initialCredits,
+  unlimitedCredits,
+}: {
+  sourceRenderId?: string;
+  initialCredits: number;
+  unlimitedCredits: boolean;
+}) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState("");
   const [mode, setMode] = useState("sketch");
+  const [credits, setCredits] = useState(initialCredits);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,6 +73,9 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
       }
 
       setResult(data.image);
+      if (data.credits && !data.credits.unlimited_credits) {
+        setCredits(data.credits.credit_balance);
+      }
       setMessage("Render completado.");
     } catch {
       setMessage("La conexión se interrumpió. Revisa el panel antes de intentarlo otra vez.");
@@ -75,6 +87,10 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 28 }}>
       <form onSubmit={handleSubmit} style={{ padding: "clamp(24px,4vw,42px)", background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24, padding: "12px 14px", background: "#fffdf8", border: "1px solid rgba(158,75,61,.24)" }}>
+          <strong>Saldo</strong>
+          <span style={{ color: "var(--rust)" }}>{unlimitedCredits ? "Sin límite" : `${credits} créditos`}</span>
+        </div>
         {sourceRenderId ? <input type="hidden" name="sourceRenderId" value={sourceRenderId} /> : null}
         <label style={labelStyle}>
           Nombre del proyecto
@@ -144,7 +160,7 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
             opacity: pending ? 0.65 : 1,
           }}
         >
-          {pending ? "Generando…" : "Generar render"}
+          {pending ? "Generando…" : `Generar render · ${mode === "style-transfer" ? 8 : 6} créditos`}
         </button>
         {message ? <p role="status" style={{ color: "#655d58", lineHeight: 1.5 }}>{message}</p> : null}
       </form>

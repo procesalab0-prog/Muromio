@@ -13,14 +13,25 @@ const actions: Array<{ id: EditAction; title: string; description: string }> = [
   { id: "inpaint", title: "Edición precisa", description: "Pinta manualmente la única zona editable." },
 ];
 
-export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: string; imageUrl: string }) {
+export function InpaintEditor({
+  sourceRenderId,
+  imageUrl,
+  initialCredits,
+  unlimitedCredits,
+}: {
+  sourceRenderId: string;
+  imageUrl: string;
+  initialCredits: number;
+  unlimitedCredits: boolean;
+}) {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const maskRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<Point | null>(null);
   const historyRef = useRef<ImageData[]>([]);
   const [sourceUrl, setSourceUrl] = useState("");
-  const [provider, setProvider] = useState<"gemini" | "stability">("gemini");
+  const [provider, setProvider] = useState<"gemini" | "stability">("stability");
+  const [credits, setCredits] = useState(initialCredits);
   const [action, setAction] = useState<EditAction>("recolor");
   const [tool, setTool] = useState<"brush" | "eraser">("brush");
   const [brushSize, setBrushSize] = useState(48);
@@ -221,6 +232,9 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
         return;
       }
       setResult(data.image);
+      if (data.credits && !data.credits.unlimited_credits) {
+        setCredits(data.credits.credit_balance);
+      }
       setMessage("Cambio aplicado y guardado como una versión nueva.");
     } catch {
       setMessage("La conexión se interrumpió. Revisa el historial antes de repetir.");
@@ -269,10 +283,15 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
 
       <aside style={{ padding: 24, background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
         {!result ? <>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 20, padding: "12px 14px", background: "#fffdf8", border: "1px solid rgba(158,75,61,.24)" }}>
+            <strong>Saldo</strong>
+            <span style={{ color: "var(--rust)" }}>{unlimitedCredits ? "Sin límite" : `${credits} créditos`}</span>
+          </div>
           <p style={{ marginTop: 0, fontSize: 13 }}>Motor de edición</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
-            <button type="button" onClick={() => setProvider("gemini")} style={provider === "gemini" ? activeActionStyle : actionStyle}>
-              <strong>Gemini</strong><small>Más comprensión y precisión</small>
+            <button type="button" disabled style={{ ...actionStyle, position: "relative", opacity: .72, cursor: "not-allowed", borderColor: "#d18b22", background: "#fff5d9" }}>
+              <span style={{ position: "absolute", top: -10, right: -6, padding: "4px 8px", borderRadius: 20, background: "#d18b22", color: "#fff", fontSize: 9, letterSpacing: ".12em", textTransform: "uppercase" }}>Próximamente</span>
+              <strong>Gemini</strong><small>Edición semántica avanzada</small>
             </button>
             <button type="button" onClick={() => setProvider("stability")} style={provider === "stability" ? activeActionStyle : actionStyle}>
               <strong>Stability</strong><small>Opción anterior</small>

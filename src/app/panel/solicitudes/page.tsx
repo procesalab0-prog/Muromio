@@ -17,7 +17,7 @@ export default async function AccessRequestsPage() {
 
   const { data: requests } = await supabase
     .from("profiles")
-    .select("id,full_name,email,phone,access_status,requested_at")
+    .select("id,full_name,email,phone,access_status,requested_at,credit_balance,unlimited_credits,credits_spent,estimated_usd")
     .neq("role", "admin")
     .order("requested_at", { ascending: false });
 
@@ -25,7 +25,7 @@ export default async function AccessRequestsPage() {
     "use server";
     const profileId = String(formData.get("profileId") ?? "");
     const status = String(formData.get("status") ?? "");
-    if (!profileId || !["approved", "rejected"].includes(status)) return;
+    if (!profileId || !["approved", "rejected", "unlimited", "limited"].includes(status)) return;
 
     const actionClient = await createClient();
     const { data: { user: reviewer } } = await actionClient.auth.getUser();
@@ -37,13 +37,17 @@ export default async function AccessRequestsPage() {
       .single();
     if (reviewerProfile?.role !== "admin" || reviewerProfile.access_status !== "approved") return;
 
+    const update = status === "unlimited" || status === "limited"
+      ? { unlimited_credits: status === "unlimited" }
+      : {
+          access_status: status,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: reviewer.id,
+        };
+
     await actionClient
       .from("profiles")
-      .update({
-        access_status: status,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: reviewer.id,
-      })
+      .update(update)
       .eq("id", profileId)
       .neq("role", "admin");
     revalidatePath("/panel/solicitudes");
@@ -66,12 +70,24 @@ export default async function AccessRequestsPage() {
               <small style={{ color: request.access_status === "approved" ? "#47704b" : request.access_status === "rejected" ? "var(--rust)" : "#817770" }}>
                 {request.access_status === "approved" ? "Aprobado" : request.access_status === "rejected" ? "Rechazado" : "Pendiente"}
               </small>
+              <p style={{ margin: "10px 0 0", fontSize: 13, color: "#655d58" }}>
+                {request.unlimited_credits ? "Sin límite" : `${request.credit_balance ?? 0} créditos restantes`}
+                {" · "}{request.credits_spent ?? 0} usados
+                {" · "}${Number(request.estimated_usd ?? 0).toFixed(2)} USD estimados
+              </p>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <form action={reviewAccess}>
                 <input type="hidden" name="profileId" value={request.id} />
                 <input type="hidden" name="status" value="approved" />
                 <button type="submit" style={approveStyle}>Aprobar</button>
+              </form>
+              <form action={reviewAccess}>
+                <input type="hidden" name="profileId" value={request.id} />
+                <input type="hidden" name="status" value={request.unlimited_credits ? "limited" : "unlimited"} />
+                <button type="submit" style={request.unlimited_credits ? rejectStyle : approveStyle}>
+                  {request.unlimited_credits ? "Quitar acceso ilimitado" : "Dar acceso ilimitado"}
+                </button>
               </form>
               <form action={reviewAccess}>
                 <input type="hidden" name="profileId" value={request.id} />

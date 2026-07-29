@@ -44,6 +44,7 @@ export async function POST(request: Request) {
   const style = String(formData.get("style") ?? "minimalismo cálido").trim().slice(0, 80);
   const requestedMode = String(formData.get("mode") ?? "sketch");
   const isStyleTransfer = requestedMode === "style-transfer";
+  const creditCost = isStyleTransfer ? 8 : 6;
   const mode: RenderMode = requestedMode === "structure" ? "structure" : "sketch";
 
   if (!projectName) {
@@ -139,6 +140,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No pudimos registrar el render." }, { status: 500 });
   }
 
+  const { data: creditResult, error: creditError } = await supabase
+    .rpc("spend_render_credits", {
+      p_amount: creditCost,
+      p_operation: isStyleTransfer ? "Transferencia de estilo" : "Generación de render",
+    })
+    .single();
+
+  if (creditError) {
+    await supabase.from("renders").update({ status: "failed", error_message: "Créditos insuficientes." }).eq("id", render.id);
+    return NextResponse.json(
+      { error: creditError.message.includes("insufficient") ? "No tienes créditos suficientes para esta generación." : "No pudimos comprobar tu saldo de créditos." },
+      { status: 402 },
+    );
+  }
+
   try {
     if (!sourceRenderId) {
       const extension = image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
@@ -206,9 +222,14 @@ export async function POST(request: Request) {
       renderId: render.id,
       projectId,
       image: `data:image/webp;base64,${base64}`,
+      credits: creditResult,
     });
   } catch (error) {
     console.error(error);
+    await supabase.rpc("refund_render_credits", {
+      p_amount: creditCost,
+      p_operation: isStyleTransfer ? "Transferencia de estilo fallida" : "Generación fallida",
+    });
     const publicError = getPublicGenerationError(error);
     await supabase
       .from("renders")
