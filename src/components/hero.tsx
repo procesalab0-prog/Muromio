@@ -1,59 +1,155 @@
-import { Container } from "./container";
+import Image from "next/image";
+import { makeTranslate, type Lang } from "@/lib/lang";
 
-const TILES = [
-  { label: "Fachada", classes: "from-clay to-clay-dark" },
-  { label: "Interior", classes: "from-stone-300 to-stone-500" },
-  { label: "Nocturno", classes: "from-ink to-ink-soft" },
-  { label: "Paisaje", classes: "from-stone-200 to-clay/70" },
-];
-
-export function Hero() {
+export function Hero({ lang }: { lang: Lang }) {
+  const t = makeTranslate(lang);
   return (
-    <section id="top" className="pt-16 sm:pt-24">
-      <Container className="grid items-center gap-14 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10 lg:pb-28">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-clay">
-            Estudio de diseño + inteligencia artificial
-          </p>
-          <h1 className="mt-5 font-display text-4xl leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-            Renders de arquitectura e interiorismo, hechos con IA.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
-            Muromío convierte planos, bocetos y referencias en renders fotorrealistas
-            en minutos, con el criterio de diseño de un estudio profesional detrás de
-            cada imagen.
-          </p>
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <a
-              href="#contacto"
-              className="rounded-full bg-ink px-6 py-3.5 text-center text-sm font-medium text-background transition-colors hover:bg-clay"
-            >
-              Solicita acceso anticipado
-            </a>
-            <a
-              href="#proceso"
-              className="rounded-full border border-ink/15 px-6 py-3.5 text-center text-sm font-medium text-ink transition-colors hover:border-ink/40"
-            >
-              Cómo funciona
-            </a>
-          </div>
+    <header
+      id="top"
+      data-hero
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "grid",
+        gridTemplateColumns: "1.04fr .96fr",
+        background: "#EFE7DC",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        data-herotext
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          padding: "120px clamp(24px,5vw,80px) 80px",
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: ".26em",
+            textTransform: "uppercase",
+            color: "#9E4B3D",
+            marginBottom: 30,
+            animation: "heroRise 1s .05s both",
+          }}
+        >
+          {t("Interior Studio — León, Gto. México", "Interior Studio — León, Gto. México")}
         </div>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-space-grotesk)",
+            fontWeight: 500,
+            fontSize: "clamp(46px,7vw,108px)",
+            lineHeight: 0.94,
+            letterSpacing: "-.045em",
+            color: "#262220",
+          }}
+        >
+          <span style={{ display: "block", animation: "heroRise 1.05s .16s both" }}>
+            {t("Espacios que", "Spaces made")}
+          </span>
+          <span style={{ display: "block", color: "#9E4B3D", animation: "heroRise 1.05s .28s both" }}>
+            {t("se habitan", "to be lived")}
+          </span>
+          <span style={{ display: "block", animation: "heroRise 1.05s .4s both" }}>
+            {t("con calma.", "slowly.")}
+          </span>
+        </h1>
+        <p
+          style={{
+            maxWidth: 452,
+            margin: "34px 0 0",
+            fontSize: 17,
+            lineHeight: 1.62,
+            color: "#5A5049",
+            animation: "heroRise 1.05s .54s both",
+          }}
+        >
+          {t(
+            "Estudio de interiorismo en León, Guanajuato. Damos forma a espacios cálidos, atemporales y profundamente habitables — del primer trazo al último detalle.",
+            "Interior design studio in León, Guanajuato. We shape warm, timeless and deeply livable spaces — from the first sketch to the last detail.",
+          )}
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 42, animation: "heroRise 1.05s .66s both" }}>
+          <a
+            href="#proyectos"
+            style={{
+              background: "#9E4B3D",
+              color: "#F6F1E9",
+              padding: "15px 30px",
+              borderRadius: 2,
+              fontSize: 12,
+              letterSpacing: ".16em",
+              textTransform: "uppercase",
+            }}
+          >
+            {t("Ver proyectos", "View projects")}
+          </a>
+          <a
+            href="#render"
+            style={{
+              color: "#262220",
+              padding: "15px 4px",
+              fontSize: 12,
+              letterSpacing: ".16em",
+              textTransform: "uppercase",
+              borderBottom: "1px solid rgba(38,34,32,.4)",
+            }}
+          >
+            {t("Render Lab →", "Render Lab →")}
+          </a>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {TILES.map((tile, i) => (
-            <div
-              key={tile.label}
-              className={`flex aspect-[4/5] items-end rounded-2xl bg-gradient-to-br p-4 ${tile.classes} ${
-                i % 2 === 1 ? "translate-y-6" : ""
-              }`}
-            >
-              <span className="rounded-full bg-background/90 px-3 py-1 text-xs font-medium text-ink">
-                {tile.label}
-              </span>
-            </div>
-          ))}
+      <div data-heroimg style={{ position: "relative", overflow: "hidden" }}>
+        <div data-parallax="0.07" style={{ position: "absolute", inset: "-9% 0" }}>
+          <Image
+            src="/images/IMG_5467.jpeg"
+            alt="Casa Serena — sala principal"
+            fill
+            priority
+            sizes="(max-width: 900px) 100vw, 48vw"
+            style={{ objectFit: "cover" }}
+          />
         </div>
-      </Container>
-    </section>
+        <div
+          style={{
+            position: "absolute",
+            left: 24,
+            bottom: 24,
+            color: "#F6F1E9",
+            fontSize: 11,
+            letterSpacing: ".2em",
+            textTransform: "uppercase",
+            mixBlendMode: "difference",
+          }}
+        >
+          {t("Casa Serena · Residencia", "Casa Serena · Residence")}
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: "clamp(24px,5vw,80px)",
+          bottom: 28,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          zIndex: 3,
+          animation: "floatY 2.6s ease-in-out infinite",
+        }}
+      >
+        <span style={{ width: 1, height: 34, background: "#9E4B3D" }} />
+        <span style={{ fontSize: 11, letterSpacing: ".24em", textTransform: "uppercase", color: "#7E382D" }}>
+          {t("Desliza", "Scroll")}
+        </span>
+      </div>
+    </header>
   );
 }

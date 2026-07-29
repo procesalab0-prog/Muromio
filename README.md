@@ -1,12 +1,9 @@
 # Muromío
 
-Landing page del estudio de diseño Muromío — renders de arquitectura e
-interiorismo potenciados por IA. Construido con Next.js (App Router),
-TypeScript y Tailwind CSS.
-
-El diseño visual actual es un placeholder a la espera del diseño final que
-se está trabajando por separado; la estructura del proyecto y los
-componentes están listos para recibirlo.
+Landing page de Muromío, estudio de interiorismo en León, Guanajuato, con
+una sección "Render Lab" para renders de espacios con IA. Construido con
+Next.js (App Router), TypeScript y Tailwind CSS, implementando el diseño
+producido en Claude Design.
 
 ## Desarrollo
 
@@ -20,8 +17,13 @@ Abre [http://localhost:3000](http://localhost:3000).
 ## Estructura
 
 - `src/app` — rutas y layout raíz (App Router)
-- `src/components` — secciones de la landing (header, hero, servicios,
-  proceso, portafolio, nosotros, contacto, footer)
+- `src/components` — `Landing` orquesta el estado de idioma (ES/EN) y las
+  animaciones de scroll (reveal, parallax, crossfade de proyecto
+  destacado, galería con scroll horizontal); cada sección vive en su
+  propio componente
+- `src/lib/lang.ts` — helper de traducción ES/EN
+- `public/images` — fotografías del proyecto Casa Serena y espacios
+  comerciales usadas en el sitio
 
 La parte de autenticación e integración con APIs de generación de renders
 se está desarrollando por separado.
