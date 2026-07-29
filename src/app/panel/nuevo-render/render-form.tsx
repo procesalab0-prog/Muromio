@@ -24,21 +24,25 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
     setMessage("Generando propuesta… puede tardar hasta un minuto.");
     setResult("");
 
-    const response = await fetch("/api/renders/generate", {
-      method: "POST",
-      body: new FormData(event.currentTarget),
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch("/api/renders/generate", {
+        method: "POST",
+        body: new FormData(event.currentTarget),
+      });
+      const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      setMessage(data.error || "No fue posible generar el render.");
+      if (!response.ok) {
+        setMessage(data.error || "La generación tardó demasiado o fue interrumpida.");
+        return;
+      }
+
+      setResult(data.image);
+      setMessage("Render completado.");
+    } catch {
+      setMessage("La conexión se interrumpió. Revisa el panel antes de intentarlo otra vez.");
+    } finally {
       setPending(false);
-      return;
     }
-
-    setResult(data.image);
-    setMessage("Render completado.");
-    setPending(false);
   }
 
   return (
