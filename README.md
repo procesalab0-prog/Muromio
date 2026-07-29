@@ -35,7 +35,7 @@ cookies. Para configurarlo localmente:
 
 1. Copia `.env.example` como `.env.local`.
 2. Añade la URL y la clave pública del proyecto de Supabase.
-3. Aplica `supabase/migrations/20260728193000_initial_schema.sql`.
+3. Aplica, en orden, las migraciones de `supabase/migrations`.
 4. Crea un usuario en Supabase Auth y abre `/login`.
 
 La migración crea perfiles, proyectos, referencias y renders. Todas las tablas
@@ -49,4 +49,7 @@ El primer proveedor integrado es Stability AI mediante sus servicios Control
 Sketch y Control Structure. Configura `STABILITY_API_KEY` únicamente como
 variable privada del servidor. Los usuarios autenticados pueden abrir
 `/panel/nuevo-render`, subir una imagen y registrar la generación dentro de su
-proyecto de Supabase.
+proyecto de Supabase. Los archivos originales y resultados se guardan en el
+bucket privado `render-assets`; el panel crea enlaces temporales para descargar
+los resultados y permite generar una nueva variación desde el render más
+reciente de cada proyecto.

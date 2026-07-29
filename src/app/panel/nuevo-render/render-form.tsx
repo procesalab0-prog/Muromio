@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 const styles = [
@@ -11,7 +12,7 @@ const styles = [
   "Industrial suave",
 ];
 
-export function RenderForm() {
+export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState("");
@@ -42,9 +43,17 @@ export function RenderForm() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 28 }}>
       <form onSubmit={handleSubmit} style={{ padding: "clamp(24px,4vw,42px)", background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
+        {sourceRenderId ? <input type="hidden" name="sourceRenderId" value={sourceRenderId} /> : null}
         <label style={labelStyle}>
           Nombre del proyecto
-          <input name="projectName" required maxLength={120} style={fieldStyle} placeholder="Casa Roble" />
+          <input
+            name="projectName"
+            required
+            maxLength={120}
+            style={fieldStyle}
+            placeholder="Casa Roble"
+            defaultValue={sourceRenderId ? "Nueva variación" : ""}
+          />
         </label>
         <label style={labelStyle}>
           Tipo de imagen
@@ -53,11 +62,18 @@ export function RenderForm() {
             <option value="structure">Fotografía o render base</option>
           </select>
         </label>
-        <label style={labelStyle}>
-          Imagen base
-          <input name="image" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
-          <small>PNG, JPG o WEBP · máximo 10 MB</small>
-        </label>
+        {sourceRenderId ? (
+          <div style={{ ...labelStyle, padding: 14, background: "#fffdf8", border: "1px solid rgba(38,34,32,.14)" }}>
+            <strong>Render base seleccionado</strong>
+            <small>La nueva versión conservará la composición del render anterior.</small>
+          </div>
+        ) : (
+          <label style={labelStyle}>
+            Imagen base
+            <input name="image" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
+            <small>PNG, JPG o WEBP · máximo 10 MB</small>
+          </label>
+        )}
         <label style={labelStyle}>
           Estilo
           <select name="style" style={fieldStyle}>
@@ -93,9 +109,19 @@ export function RenderForm() {
         {message ? <p role="status" style={{ color: "#655d58", lineHeight: 1.5 }}>{message}</p> : null}
       </form>
 
-      <div style={{ minHeight: 420, display: "grid", placeItems: "center", background: "#d8cec1", border: "1px solid rgba(38,34,32,.1)", overflow: "hidden" }}>
+      <div style={{ minHeight: 420, display: "grid", placeItems: "center", alignContent: "center", gap: 16, background: "#d8cec1", border: "1px solid rgba(38,34,32,.1)", overflow: "hidden" }}>
         {result ? (
-          <Image src={result} alt="Render generado" width={1400} height={1050} unoptimized style={{ width: "100%", height: "auto" }} />
+          <>
+            <Image src={result} alt="Render generado" width={1400} height={1050} unoptimized style={{ width: "100%", height: "auto" }} />
+            <div style={{ display: "flex", gap: 10, padding: "0 16px 16px", flexWrap: "wrap", justifyContent: "center" }}>
+              <a href={result} download="muromio-render.webp" style={actionStyle}>
+                Descargar
+              </a>
+              <Link href="/panel" style={actionStyle}>
+                Ver historial
+              </Link>
+            </div>
+          </>
         ) : (
           <p style={{ maxWidth: 280, padding: 24, textAlign: "center", color: "#655d58", lineHeight: 1.6 }}>
             Tu render aparecerá aquí cuando termine la generación.
@@ -121,4 +147,14 @@ const fieldStyle = {
   background: "#fffdf8",
   color: "var(--ink)",
   font: "inherit",
+} as const;
+
+const actionStyle = {
+  display: "inline-flex",
+  padding: "10px 16px",
+  background: "var(--cream)",
+  color: "var(--ink)",
+  border: "1px solid rgba(38,34,32,.2)",
+  textDecoration: "none",
+  fontSize: 13,
 } as const;
