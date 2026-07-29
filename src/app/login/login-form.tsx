@@ -36,7 +36,7 @@ export function LoginForm({ initialMode = "login" }: { initialMode?: "login" | "
         return;
       }
       if (!data.session) {
-        setMessage("Revisa tu correo para confirmar la cuenta. Después podrás consultar el estado de tu solicitud.");
+        setMessage("Tu cuenta fue creada. Inicia sesión para consultar el estado de tu solicitud.");
         setPending(false);
         return;
       }
