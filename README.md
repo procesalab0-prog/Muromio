@@ -55,3 +55,7 @@ los resultados y permite generar una nueva variación desde el render más
 reciente de cada proyecto. La acción **Editar zona** abre un editor de máscara
 manual y utiliza Stability Inpaint para modificar solamente el área pintada,
 guardando el resultado como una versión nueva.
+
+El modo **Transferir estilo de una referencia** combina una imagen base con una
+referencia visual de Muromío mediante Stability Style Transfer. Ambas imágenes
+se conservan como referencias privadas del proyecto.

@@ -16,6 +16,7 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState("");
+  const [mode, setMode] = useState("sketch");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,9 +58,10 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
         </label>
         <label style={labelStyle}>
           Tipo de imagen
-          <select name="mode" style={fieldStyle} defaultValue="sketch">
+          <select name="mode" style={fieldStyle} value={mode} onChange={(event) => setMode(event.target.value)}>
             <option value="sketch">Plano o boceto</option>
             <option value="structure">Fotografía o render base</option>
+            <option value="style-transfer">Transferir estilo de una referencia</option>
           </select>
         </label>
         {sourceRenderId ? (
@@ -74,6 +76,13 @@ export function RenderForm({ sourceRenderId }: { sourceRenderId?: string }) {
             <small>PNG, JPG o WEBP · máximo 10 MB</small>
           </label>
         )}
+        {mode === "style-transfer" ? (
+          <label style={labelStyle}>
+            Referencia de estilo Muromío
+            <input name="styleImage" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
+            <small>Usaremos sus materiales, color e iluminación; la imagen base conservará su composición.</small>
+          </label>
+        ) : null}
         <label style={labelStyle}>
           Estilo
           <select name="style" style={fieldStyle}>

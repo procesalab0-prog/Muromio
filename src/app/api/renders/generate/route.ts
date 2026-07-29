@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateRender, type RenderMode } from "@/lib/renders/stability";
+import { generateRender, transferRenderStyle, type RenderMode } from "@/lib/renders/stability";
 
 export const maxDuration = 60;
 
@@ -19,11 +19,13 @@ export async function POST(request: Request) {
 
   const formData = await request.formData();
   const uploadedImage = formData.get("image");
+  const uploadedStyleImage = formData.get("styleImage");
   const sourceRenderId = String(formData.get("sourceRenderId") ?? "").trim();
   const projectName = String(formData.get("projectName") ?? "").trim().slice(0, 120);
   const details = String(formData.get("details") ?? "").trim().slice(0, 1200);
   const style = String(formData.get("style") ?? "minimalismo cálido").trim().slice(0, 80);
   const requestedMode = String(formData.get("mode") ?? "sketch");
+  const isStyleTransfer = requestedMode === "style-transfer";
   const mode: RenderMode = requestedMode === "structure" ? "structure" : "sketch";
 
   if (!projectName) {
@@ -31,7 +33,21 @@ export async function POST(request: Request) {
   }
 
   let image: File;
+  let styleImage: File | null = null;
   let existingProjectId: string | null = null;
+
+  if (isStyleTransfer) {
+    if (!(uploadedStyleImage instanceof File) || !allowedTypes.has(uploadedStyleImage.type)) {
+      return NextResponse.json(
+        { error: "Sube una referencia de estilo PNG, JPG o WEBP." },
+        { status: 400 },
+      );
+    }
+    if (uploadedStyleImage.size > maxFileSize) {
+      return NextResponse.json({ error: "La referencia no puede superar 10 MB." }, { status: 400 });
+    }
+    styleImage = uploadedStyleImage;
+  }
 
   if (sourceRenderId) {
     const { data: sourceRender } = await supabase
@@ -107,7 +123,7 @@ export async function POST(request: Request) {
       project_id: projectId,
       status: "processing",
       prompt,
-      provider: "stability",
+      provider: isStyleTransfer ? "stability-style-transfer" : "stability",
     })
     .select("id")
     .single();
@@ -139,7 +155,28 @@ export async function POST(request: Request) {
       }
     }
 
-    const base64 = await generateRender({ image, prompt, mode });
+    if (styleImage) {
+      const extension = styleImage.type === "image/png" ? "png" : styleImage.type === "image/webp" ? "webp" : "jpg";
+      const stylePath = `${user.id}/${projectId}/references/${crypto.randomUUID()}.${extension}`;
+      const { error: styleUploadError } = await supabase.storage
+        .from("render-assets")
+        .upload(stylePath, styleImage, { contentType: styleImage.type, upsert: false });
+      if (styleUploadError) {
+        throw new Error(`Could not store style reference: ${styleUploadError.message}`);
+      }
+      const { error: styleReferenceError } = await supabase.from("references").insert({
+        project_id: projectId,
+        storage_path: stylePath,
+        kind: "moodboard",
+      });
+      if (styleReferenceError) {
+        throw new Error(`Could not register style reference: ${styleReferenceError.message}`);
+      }
+    }
+
+    const base64 = styleImage
+      ? await transferRenderStyle({ image, styleImage, prompt })
+      : await generateRender({ image, prompt, mode });
     const outputBuffer = Buffer.from(base64, "base64");
     const outputPath = `${user.id}/${projectId}/outputs/${render.id}.webp`;
     const { error: outputUploadError } = await supabase.storage
