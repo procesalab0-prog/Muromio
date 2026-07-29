@@ -59,3 +59,8 @@ guardando el resultado como una versión nueva.
 El modo **Transferir estilo de una referencia** combina una imagen base con una
 referencia visual de Muromío mediante Stability Style Transfer. Ambas imágenes
 se conservan como referencias privadas del proyecto.
+
+El editor ofrece cuatro flujos: Search and Recolor para materiales y colores,
+Search and Replace para sustituir objetos, Erase para eliminarlos e Inpaint
+para cambios manuales. La herramienta de máscara incluye zoom, pincel continuo,
+borrador, deshacer y vista previa.
