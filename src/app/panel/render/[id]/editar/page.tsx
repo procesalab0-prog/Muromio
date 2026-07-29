@@ -16,6 +16,16 @@ export default async function EditRenderPage({
 
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("access_status")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.access_status !== "approved") {
+    redirect("/solicitud-pendiente");
+  }
+
   const { data: render } = await supabase
     .from("renders")
     .select("id,output_path,projects(name)")

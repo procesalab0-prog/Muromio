@@ -18,6 +18,16 @@ export default async function NewRenderPage({
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("access_status")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.access_status !== "approved") {
+    redirect("/solicitud-pendiente");
+  }
+
   return (
     <main style={{ minHeight: "100svh", padding: "clamp(28px,5vw,72px)", background: "var(--sand)" }}>
       <Link href="/panel" style={{ color: "var(--rust)", textDecoration: "none", fontSize: 13 }}>

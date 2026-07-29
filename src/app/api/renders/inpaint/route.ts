@@ -21,6 +21,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Debes iniciar sesión." }, { status: 401 });
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("access_status")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.access_status !== "approved") {
+    return NextResponse.json(
+      { error: "Tu acceso a la prueba todavía no ha sido aprobado." },
+      { status: 403 },
+    );
+  }
+
   const formData = await request.formData();
   const sourceRenderId = String(formData.get("sourceRenderId") ?? "").trim();
   const requestedChange = String(formData.get("prompt") ?? "").trim().slice(0, 1200);

@@ -10,7 +10,12 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect("/panel");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("access_status")
+      .eq("id", user.id)
+      .single();
+    redirect(profile?.access_status === "approved" ? "/panel" : "/solicitud-pendiente");
   }
 
   return (

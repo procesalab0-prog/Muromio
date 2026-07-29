@@ -20,6 +20,16 @@ export default async function PanelPage() {
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role,access_status")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.access_status !== "approved") {
+    redirect("/solicitud-pendiente");
+  }
+
   const { data: projects } = await supabase
     .from("projects")
     .select("id,name,description,created_at,renders(id,status,output_path,created_at)")
@@ -75,6 +85,24 @@ export default async function PanelPage() {
       </header>
 
       <section style={{ marginTop: 64 }}>
+        {profile.role === "admin" ? (
+          <Link
+            href="/panel/solicitudes"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: "inline-flex",
+              marginRight: 12,
+              marginBottom: 28,
+              padding: "13px 21px",
+              border: "1px solid var(--rust)",
+              color: "var(--rust)",
+              textDecoration: "none",
+            }}
+          >
+            Solicitudes de acceso
+          </Link>
+        ) : null}
         <Link
           href="/panel/nuevo-render"
           style={{

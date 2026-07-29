@@ -68,3 +68,15 @@ borrador, deshacer y vista previa.
 Gemini 3.1 Flash Image está disponible como motor de edición semántica y es la
 opción predeterminada del editor. Configura `GEMINI_API_KEY` como variable
 privada del servidor; Stability permanece disponible para comparar resultados.
+
+## Acceso a la prueba
+
+El registro solicita nombre, correo, teléfono y contraseña. Cada cuenta nueva
+queda pendiente hasta que un administrador la aprueba. La primera cuenta
+existente al aplicar `20260729003000_access_requests.sql` se convierte
+automáticamente en administradora; desde el panel puede abrir **Solicitudes de
+acceso** en otra pestaña y aprobar o rechazar usuarios.
+
+Las cuentas pendientes quedan bloqueadas tanto en las páginas del panel como en
+las rutas de generación y edición, y las políticas RLS de Supabase impiden que
+accedan directamente a proyectos, renders y referencias.
