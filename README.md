@@ -27,3 +27,56 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 La parte de autenticación e integración con APIs de generación de renders
 se está desarrollando por separado.
+
+## Supabase
+
+La autenticación y el espacio de trabajo usan Supabase SSR con sesiones en
+cookies. Para configurarlo localmente:
+
+1. Copia `.env.example` como `.env.local`.
+2. Añade la URL y la clave pública del proyecto de Supabase.
+3. Aplica, en orden, las migraciones de `supabase/migrations`.
+4. Crea un usuario en Supabase Auth y abre `/login`.
+
+La migración crea perfiles, proyectos, referencias y renders. Todas las tablas
+tienen Row Level Security para limitar los datos al propietario del proyecto.
+La clave `service_role` no es necesaria y nunca debe exponerse en variables
+`NEXT_PUBLIC_*`.
+
+## Generación de renders
+
+El primer proveedor integrado es Stability AI mediante sus servicios Control
+Sketch y Control Structure. Configura `STABILITY_API_KEY` únicamente como
+variable privada del servidor. Los usuarios autenticados pueden abrir
+`/panel/nuevo-render`, subir una imagen y registrar la generación dentro de su
+proyecto de Supabase. Los archivos originales y resultados se guardan en el
+bucket privado `render-assets`; el panel crea enlaces temporales para descargar
+los resultados y permite generar una nueva variación desde el render más
+reciente de cada proyecto. La acción **Editar zona** abre un editor de máscara
+manual y utiliza Stability Inpaint para modificar solamente el área pintada,
+guardando el resultado como una versión nueva.
+
+El modo **Transferir estilo de una referencia** combina una imagen base con una
+referencia visual de Muromío mediante Stability Style Transfer. Ambas imágenes
+se conservan como referencias privadas del proyecto.
+
+El editor ofrece cuatro flujos: Search and Recolor para materiales y colores,
+Search and Replace para sustituir objetos, Erase para eliminarlos e Inpaint
+para cambios manuales. La herramienta de máscara incluye zoom, pincel continuo,
+borrador, deshacer y vista previa.
+
+Gemini 3.1 Flash Image está disponible como motor de edición semántica y es la
+opción predeterminada del editor. Configura `GEMINI_API_KEY` como variable
+privada del servidor; Stability permanece disponible para comparar resultados.
+
+## Acceso a la prueba
+
+El registro solicita nombre, correo, teléfono y contraseña. Cada cuenta nueva
+queda pendiente hasta que un administrador la aprueba. La primera cuenta
+existente al aplicar `20260729003000_access_requests.sql` se convierte
+automáticamente en administradora; desde el panel puede abrir **Solicitudes de
+acceso** en otra pestaña y aprobar o rechazar usuarios.
+
+Las cuentas pendientes quedan bloqueadas tanto en las páginas del panel como en
+las rutas de generación y edición, y las políticas RLS de Supabase impiden que
+accedan directamente a proyectos, renders y referencias.

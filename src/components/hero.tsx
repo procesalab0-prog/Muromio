@@ -91,7 +91,7 @@ export function Hero({ lang }: { lang: Lang }) {
             {t("Ver proyectos", "View projects")}
           </a>
           <a
-            href="#render"
+            href="/login?mode=register"
             style={{
               color: "#262220",
               padding: "15px 4px",

@@ -34,7 +34,7 @@ export function RenderLab({ lang }: { lang: Lang }) {
           </p>
           <div data-reveal data-delay="210">
             <HoverLink
-              href="#contacto"
+              href="/login?mode=register"
               base={{ display: "inline-block", background: "#EFE7DC", color: "#262220", padding: "16px 32px", borderRadius: 2, fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase" }}
               hover={{ background: "#9E4B3D", color: "#F6F1E9" }}
             >

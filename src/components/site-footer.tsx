@@ -4,7 +4,7 @@ const FOOTER_NAV = [
   { href: "#estudio", es: "Estudio", en: "Studio" },
   { href: "#proyectos", es: "Proyectos", en: "Projects" },
   { href: "#servicios", es: "Servicios", en: "Services" },
-  { href: "#render", label: "Render Lab" },
+  { href: "/login?mode=register", label: "Render Lab" },
 ];
 
 export function SiteFooter({ lang }: { lang: Lang }) {
