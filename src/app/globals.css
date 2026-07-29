@@ -180,7 +180,10 @@ img {
     text-align: left !important;
   }
   [data-hero-name] {
-    font-size: 26vw !important;
+    max-width: 100%;
+    font-size: clamp(62px, 21vw, 112px) !important;
+    letter-spacing: -0.035em !important;
+    white-space: nowrap;
   }
   [data-sticky] {
     grid-template-columns: 1fr !important;
