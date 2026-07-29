@@ -20,6 +20,7 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
   const lastPointRef = useRef<Point | null>(null);
   const historyRef = useRef<ImageData[]>([]);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [provider, setProvider] = useState<"gemini" | "stability">("gemini");
   const [action, setAction] = useState<EditAction>("recolor");
   const [tool, setTool] = useState<"brush" | "eraser">("brush");
   const [brushSize, setBrushSize] = useState(48);
@@ -203,6 +204,7 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
 
     const body = new FormData();
     body.set("sourceRenderId", sourceRenderId);
+    body.set("provider", provider);
     body.set("action", action);
     body.set("objectPrompt", objectPrompt.trim());
     body.set("prompt", prompt.trim());
@@ -267,6 +269,15 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
 
       <aside style={{ padding: 24, background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
         {!result ? <>
+          <p style={{ marginTop: 0, fontSize: 13 }}>Motor de edición</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
+            <button type="button" onClick={() => setProvider("gemini")} style={provider === "gemini" ? activeActionStyle : actionStyle}>
+              <strong>Gemini</strong><small>Más comprensión y precisión</small>
+            </button>
+            <button type="button" onClick={() => setProvider("stability")} style={provider === "stability" ? activeActionStyle : actionStyle}>
+              <strong>Stability</strong><small>Opción anterior</small>
+            </button>
+          </div>
           <p style={{ marginTop: 0, fontSize: 13 }}>Tipo de cambio</p>
           <div style={{ display: "grid", gap: 8, marginBottom: 20 }}>
             {actions.map((item) => (
@@ -295,7 +306,7 @@ export function InpaintEditor({ sourceRenderId, imageUrl }: { sourceRenderId: st
           )}
           {needsMask ? <button type="button" onClick={clearSelection} style={secondaryButtonStyle}>Limpiar selección</button> : null}
           <button type="button" onClick={applyChange} disabled={pending} style={{ ...primaryButtonStyle, opacity: pending ? .65 : 1 }}>
-            {pending ? "Aplicando…" : "Aplicar cambio · 5 créditos"}
+            {pending ? "Aplicando…" : provider === "gemini" ? "Aplicar con Gemini" : "Aplicar con Stability · 5 créditos"}
           </button>
         </> : (
           <div style={{ display: "grid", gap: 10 }}>

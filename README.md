@@ -64,3 +64,7 @@ El editor ofrece cuatro flujos: Search and Recolor para materiales y colores,
 Search and Replace para sustituir objetos, Erase para eliminarlos e Inpaint
 para cambios manuales. La herramienta de máscara incluye zoom, pincel continuo,
 borrador, deshacer y vista previa.
+
+Gemini 3.1 Flash Image está disponible como motor de edición semántica y es la
+opción predeterminada del editor. Configura `GEMINI_API_KEY` como variable
+privada del servidor; Stability permanece disponible para comparar resultados.

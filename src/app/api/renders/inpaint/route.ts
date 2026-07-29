@@ -7,8 +7,9 @@ import {
   StabilityApiError,
   type SmartEditMode,
 } from "@/lib/renders/stability";
+import { editRenderWithGemini, GeminiApiError } from "@/lib/renders/gemini";
 
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   const requestedChange = String(formData.get("prompt") ?? "").trim().slice(0, 1200);
   const objectPrompt = String(formData.get("objectPrompt") ?? "").trim().slice(0, 300);
   const action = String(formData.get("action") ?? "inpaint");
+  const provider = String(formData.get("provider") ?? "gemini");
   const mask = formData.get("mask");
   const needsMask = action === "inpaint" || action === "erase";
   const needsObject = action === "recolor" || action === "replace";
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
       project_id: sourceRender.project_id,
       status: "processing",
       prompt,
-      provider: `stability-${action}`,
+      provider: provider === "gemini" ? "gemini-3.1-flash-image" : `stability-${action}`,
     })
     .select("id")
     .single();
@@ -88,7 +90,23 @@ export async function POST(request: Request) {
       type: sourceBlob.type || "image/webp",
     });
     let base64: string;
-    if (action === "erase") {
+    let outputType = "image/webp";
+    if (provider === "gemini") {
+      const geminiPrompt = [
+        prompt,
+        mask instanceof File
+          ? "The second image is a black-and-white mask: white marks the only editable area and black must remain unchanged."
+          : "",
+        "Return only the finished edited architectural image. Keep all unrequested pixels, geometry, furnishings, camera position, lighting, and shadows visually identical.",
+      ].filter(Boolean).join(" ");
+      const geminiResult = await editRenderWithGemini({
+        image,
+        mask: needsMask ? mask as File : undefined,
+        prompt: geminiPrompt,
+      });
+      base64 = geminiResult.base64;
+      outputType = geminiResult.mimeType;
+    } else if (action === "erase") {
       base64 = await eraseRender({ image, mask: mask as File });
     } else if (action === "recolor" || action === "replace") {
       base64 = await smartEditRender({
@@ -100,11 +118,12 @@ export async function POST(request: Request) {
     } else {
       base64 = await inpaintRender({ image, mask: mask as File, prompt });
     }
-    const outputPath = `${user.id}/${sourceRender.project_id}/outputs/${render.id}.webp`;
+    const outputExtension = outputType.includes("png") ? "png" : outputType.includes("jpeg") ? "jpg" : "webp";
+    const outputPath = `${user.id}/${sourceRender.project_id}/outputs/${render.id}.${outputExtension}`;
     const { error: uploadError } = await supabase.storage
       .from("render-assets")
       .upload(outputPath, Buffer.from(base64, "base64"), {
-        contentType: "image/webp",
+        contentType: outputType,
         upsert: true,
       });
 
@@ -121,7 +140,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       renderId: render.id,
-      image: `data:image/webp;base64,${base64}`,
+      image: `data:${outputType};base64,${base64}`,
     });
   } catch (error) {
     console.error(error);
@@ -141,6 +160,20 @@ export async function POST(request: Request) {
 }
 
 function getPublicEditError(error: unknown) {
+  if (error instanceof GeminiApiError) {
+    if (error.status === 503 && error.providerMessage.includes("GEMINI_API_KEY")) {
+      return "Gemini todavía no está configurado en Vercel.";
+    }
+    const messages: Record<number, string> = {
+      400: "Gemini rechazó la imagen o la instrucción (código 400).",
+      403: "La clave de Gemini no tiene permiso para usar el modelo (código 403).",
+      429: "Gemini alcanzó el límite de solicitudes o presupuesto (código 429).",
+      500: "Gemini tuvo un error interno (código 500).",
+      502: "Gemini no devolvió una imagen.",
+      503: "Gemini no está disponible temporalmente.",
+    };
+    return messages[error.status] ?? `Gemini respondió con el código ${error.status}.`;
+  }
   if (error instanceof StabilityApiError) {
     const messages: Record<number, string> = {
       400: "Stability rechazó algún parámetro de la edición (código 400).",
