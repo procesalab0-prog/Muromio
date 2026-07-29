@@ -10,6 +10,12 @@ const FIGURES = [
   { src: "/images/IMG_5458.jpeg", width: 1320, height: 727, es: "Lounge & bar", en: "Lounge & bar" },
 ];
 
+const TRIO = [
+  { src: "/images/exterior-cocina.jpeg", width: 1320, height: 1074 },
+  { src: "/images/exterior-comedor.jpeg", width: 1320, height: 956 },
+  { src: "/images/exterior-lounge.jpeg", width: 1320, height: 939 },
+];
+
 export function Galeria({ lang }: { lang: Lang }) {
   const t = makeTranslate(lang);
   return (
@@ -55,6 +61,26 @@ export function Galeria({ lang }: { lang: Lang }) {
               </figcaption>
             </figure>
           ))}
+
+          <figure
+            style={{ position: "relative", height: "62vh", flex: "0 0 auto", margin: 0, overflow: "hidden", display: "flex", borderRadius: 2 }}
+          >
+            {TRIO.map((img) => (
+              <Image
+                key={img.src}
+                src={img.src}
+                alt=""
+                width={img.width}
+                height={img.height}
+                style={{ height: "100%", width: "auto", objectFit: "cover", display: "block" }}
+              />
+            ))}
+            <figcaption
+              style={{ position: "absolute", left: 16, bottom: 14, color: "#F1E8DC", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase" }}
+            >
+              {t("Casa privada · interior", "Private residence · interior")}
+            </figcaption>
+          </figure>
         </div>
       </div>
     </section>
