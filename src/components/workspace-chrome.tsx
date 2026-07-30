@@ -8,29 +8,29 @@ const navigation = [
   {
     label: "General",
     items: [
-      { href: "/panel", label: "Vista general", icon: "◱" },
-      { href: "/panel/actividad", label: "Actividad", icon: "◷" },
+      { href: "/panel", label: "Vista general", icon: "home" },
+      { href: "/panel/actividad", label: "Actividad", icon: "activity" },
     ],
   },
   {
     label: "Trabajo",
     items: [
-      { href: "/panel/proyectos", label: "Proyectos", icon: "▧" },
+      { href: "/panel/proyectos", label: "Proyectos", icon: "projects" },
     ],
   },
   {
     label: "Inteligencia",
     items: [
-      { href: "/panel/nuevo-render", label: "Render Lab", icon: "✦", accent: true },
-      { href: "/panel/estilos", label: "Estilos", icon: "❖" },
-      { href: "", label: "Videos", icon: "▷", soon: true },
+      { href: "/panel/nuevo-render", label: "Render Lab", icon: "sparkles", accent: true },
+      { href: "/panel/estilos", label: "Estilos", icon: "styles" },
+      { href: "", label: "Videos", icon: "video", soon: true },
     ],
   },
   {
     label: "Negocio",
     items: [
-      { href: "/panel/finanzas", label: "Presupuestos", icon: "$" },
-      { href: "/panel/clientes", label: "Clientes", icon: "◌" },
+      { href: "/panel/finanzas", label: "Presupuestos", icon: "money" },
+      { href: "/panel/clientes", label: "Clientes", icon: "users" },
     ],
   },
 ];
@@ -68,7 +68,7 @@ export function WorkspaceChrome({
         .map((group) => ({ ...group, items: group.items.filter((item) => item.href !== "/panel/actividad") }))
     : navigation;
   const groups = role === "admin"
-    ? [...roleNavigation, { label: "Sistema", items: [{ href: "/panel/solicitudes", label: "Administración", icon: "⚙" }] }]
+    ? [...roleNavigation, { label: "Sistema", items: [{ href: "/panel/solicitudes", label: "Administración", icon: "settings" }] }]
     : roleNavigation;
 
   return (
@@ -90,7 +90,7 @@ export function WorkspaceChrome({
               <small className="os-nav-label">{group.label}</small>
               {group.items.map((item) => item.soon ? (
                 <span className="os-nav-item is-disabled" key={item.label}>
-                  <i>{item.icon}</i><b>{item.label}</b><em>Pronto</em>
+                  <i><NavIcon name={item.icon} /></i><b>{item.label}</b><em>Pronto</em>
                 </span>
               ) : (
                 <Link
@@ -101,7 +101,7 @@ export function WorkspaceChrome({
                   data-tour={item.href === "/panel/nuevo-render" ? "render-lab" : item.href === "/panel/proyectos" ? "projects" : item.href === "/panel/finanzas" ? "finances" : undefined}
                   title={collapsed ? item.label : undefined}
                 >
-                  <i>{item.icon}</i><b>{item.label}</b>
+                  <i><NavIcon name={item.icon} /></i><b>{item.label}</b>
                 </Link>
               ))}
             </div>
@@ -141,4 +141,20 @@ export function WorkspaceChrome({
       <WorkspaceTour />
     </div>
   );
+}
+
+function NavIcon({ name }: { name: string }) {
+  const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const paths: Record<string, ReactNode> = {
+    home: <><path d="M3 10.5 12 3l9 7.5" /><path d="M5.5 9v11h13V9M9 20v-6h6v6" /></>,
+    activity: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></>,
+    projects: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 4v5" /></>,
+    sparkles: <><path d="m12 2 1.2 4.1L17 8l-3.8 1.9L12 14l-1.2-4.1L7 8l3.8-1.9L12 2Z" /><path d="m5 14 .8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14Zm14-2 .7 1.8 1.8.7-1.8.7L19 17l-.7-1.8-1.8-.7 1.8-.7L19 12Z" /></>,
+    styles: <><circle cx="12" cy="12" r="9" /><circle cx="9" cy="9" r="1" /><circle cx="15" cy="8" r="1" /><circle cx="16" cy="14" r="1" /><path d="M12 21c-1.5-2 .3-3.6 2-3.4" /></>,
+    video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></>,
+    money: <><circle cx="12" cy="12" r="9" /><path d="M15.5 8.5c-.8-.8-2-1.2-3.5-1.2-1.9 0-3.2.9-3.2 2.3 0 3.5 6.4 1.5 6.4 4.9 0 1.4-1.3 2.3-3.3 2.3-1.5 0-2.9-.5-3.8-1.4M12 5.5v13" /></>,
+    users: <><circle cx="9" cy="9" r="3" /><path d="M3.5 20c.5-3.2 2.4-5 5.5-5s5 1.8 5.5 5M16 7.2a3 3 0 0 1 0 5.6M17 15c2.1.4 3.3 2 3.5 4.5" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19 13.5v-3l-2-.7a7.7 7.7 0 0 0-.7-1.7l.9-1.9-2.1-2.1-1.9.9a7.7 7.7 0 0 0-1.7-.7L10.5 2h-3l-.7 2a7.7 7.7 0 0 0-1.7.7l-1.9-.9-2.1 2.1.9 1.9a7.7 7.7 0 0 0-.7 1.7L0 10.5v3l2 .7c.2.6.4 1.2.7 1.7l-.9 1.9 2.1 2.1 1.9-.9c.5.3 1.1.5 1.7.7l.7 2h3l.7-2c.6-.2 1.2-.4 1.7-.7l1.9.9 2.1-2.1-.9-1.9c.3-.5.5-1.1.7-1.7l2-.7Z" transform="translate(2.5 .5) scale(.8)" /></>,
+  };
+  return <svg viewBox="0 0 24 24" aria-hidden="true" {...common}>{paths[name]}</svg>;
 }
