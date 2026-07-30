@@ -1,8 +1,8 @@
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
-import { relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
+import { relationOne, requireTeamWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function ActivityPage() {
-  const { supabase, profile } = await requireWorkspace();
+  const { supabase, profile } = await requireTeamWorkspace();
   const [{ data: events }, { data: transactions }] = await Promise.all([
     supabase.from("activity_events").select("*,actor:profiles(full_name,email),project:projects(name)").order("created_at", { ascending: false }).limit(80),
     supabase.from("credit_transactions").select("id,amount,estimated_usd,operation,created_at,user:profiles(full_name,email)").order("created_at", { ascending: false }).limit(30),

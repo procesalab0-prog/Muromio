@@ -18,14 +18,14 @@ export default async function PanelPage() {
       .select("id,name,status,stage,due_date,target_budget,client:clients(name),renders(id,status)")
       .neq("status", "archived")
       .order("updated_at", { ascending: false })
-      .limit(6),
+      .limit(100),
     supabase.from("clients").select("id,status", { count: "exact" }).neq("status", "archived"),
     supabase
       .from("tasks")
       .select("id,title,status,priority,due_at,project:projects(id,name)")
       .neq("status", "done")
       .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(6),
+      .limit(100),
     supabase.from("budgets").select("id,total,status,project:projects(name)").order("created_at", { ascending: false }),
     supabase
       .from("approvals")
@@ -53,6 +53,16 @@ export default async function PanelPage() {
     month: "long",
     year: "numeric",
   }).format(new Date());
+  const stageCounts = ["brief", "concept", "design", "development", "procurement", "construction", "delivery"]
+    .map((stage) => ({ stage, count: (projects ?? []).filter((project) => project.stage === stage).length }))
+    .filter((item) => item.count > 0);
+  const maxStageCount = Math.max(1, ...stageCounts.map((item) => item.count));
+  const workload = [
+    { label: "Urgentes", count: (tasks ?? []).filter((task) => task.priority === "urgent").length, tone: "urgent" },
+    { label: "Alta prioridad", count: (tasks ?? []).filter((task) => task.priority === "high").length, tone: "high" },
+    { label: "Programadas", count: (tasks ?? []).filter((task) => !["urgent", "high"].includes(task.priority)).length, tone: "normal" },
+  ];
+  const maxWorkload = Math.max(1, ...workload.map((item) => item.count));
 
   return (
     <WorkspaceShell
@@ -68,7 +78,7 @@ export default async function PanelPage() {
         actions={
           <>
             {profile.role === "admin" ? <Link href="/panel/solicitudes" className="button-secondary">Accesos</Link> : null}
-            <Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link>
+            {profile.role !== "client" ? <Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link> : null}
           </>
         }
       />
@@ -87,7 +97,7 @@ export default async function PanelPage() {
             <Link href="/panel/proyectos">Ver todos ↗</Link>
           </div>
           <div className="project-list">
-            {(projects ?? []).length ? (projects ?? []).map((project) => (
+            {(projects ?? []).length ? (projects ?? []).slice(0, 6).map((project) => (
               <Link href={`/panel/proyectos/${project.id}`} key={project.id} className="project-row">
                 <span className={`project-status status-${project.status}`} />
                 <div>
@@ -112,13 +122,40 @@ export default async function PanelPage() {
             <div><small>Próximos pasos</small><h2>Agenda crítica</h2></div>
           </div>
           <div className="task-list">
-            {(tasks ?? []).length ? (tasks ?? []).map((task) => (
+            {(tasks ?? []).length ? (tasks ?? []).slice(0, 6).map((task) => (
               <div className="task-row" key={task.id}>
                 <span className={`priority-${task.priority}`} />
                 <div><strong>{task.title}</strong><small>{relationOne(task.project)?.name || "Estudio"}</small></div>
                 <time>{task.due_at ? shortDate(task.due_at) : "Abierta"}</time>
               </div>
             )) : <p className="muted">No hay tareas pendientes.</p>}
+          </div>
+        </article>
+      </section>
+
+      <section className="workspace-grid workspace-grid-main os-insight-grid">
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Distribución real</small><h2>Proyectos por etapa</h2></div><span>{activeProjects}</span></div>
+          <div className="os-bar-chart">
+            {stageCounts.length ? stageCounts.map((item) => (
+              <div key={item.stage}>
+                <span>{stageLabel(item.stage)}</span>
+                <i><b style={{ width: `${(item.count / maxStageCount) * 100}%` }} /></i>
+                <strong>{item.count}</strong>
+              </div>
+            )) : <p className="muted">Crea proyectos para visualizar la carga por etapa.</p>}
+          </div>
+        </article>
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Atención operativa</small><h2>Carga de trabajo</h2></div><span>{pendingTasks}</span></div>
+          <div className="os-bar-chart">
+            {workload.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <i><b className={`tone-${item.tone}`} style={{ width: `${(item.count / maxWorkload) * 100}%` }} /></i>
+                <strong>{item.count}</strong>
+              </div>
+            ))}
           </div>
         </article>
       </section>

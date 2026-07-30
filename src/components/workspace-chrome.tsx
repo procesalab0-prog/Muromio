@@ -29,7 +29,7 @@ const navigation = [
   {
     label: "Negocio",
     items: [
-      { href: "/panel/finanzas", label: "Presupuestos", icon: "₵" },
+      { href: "/panel/finanzas", label: "Presupuestos", icon: "$" },
       { href: "/panel/clientes", label: "Clientes", icon: "◌" },
     ],
   },
@@ -62,20 +62,27 @@ export function WorkspaceChrome({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [crumb, title] = sectionTitles[section] ?? ["Muromío Studio OS", "Proyecto"];
-  const groups = role === "admin"
-    ? [...navigation, { label: "Sistema", items: [{ href: "/panel/solicitudes", label: "Administración", icon: "⚙" }] }]
+  const roleNavigation = role === "client"
+    ? navigation
+        .filter((group) => ["General", "Trabajo"].includes(group.label))
+        .map((group) => ({ ...group, items: group.items.filter((item) => item.href !== "/panel/actividad") }))
     : navigation;
+  const groups = role === "admin"
+    ? [...roleNavigation, { label: "Sistema", items: [{ href: "/panel/solicitudes", label: "Administración", icon: "⚙" }] }]
+    : roleNavigation;
 
   return (
     <div className={`workspace workspace-os ${collapsed ? "is-collapsed" : ""}`}>
       <aside className={`workspace-sidebar os-sidebar ${mobileOpen ? "is-open" : ""}`}>
         <div className="os-brand-row">
           <Link href="/" className="workspace-brand os-brand">
-            Muromío <small>OS</small>
+            <span className="os-brand-full">Muromío <small>OS</small></span>
+            <span className="os-brand-mark" aria-hidden="true">M</span>
           </Link>
-          <button className="os-collapse" onClick={() => setCollapsed((value) => !value)} aria-label="Colapsar menú">
+          <button className="os-collapse" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expandir menú" : "Colapsar menú"} aria-expanded={!collapsed}>
             {collapsed ? "›" : "‹"}
           </button>
+          <button className="os-mobile-close" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú">×</button>
         </div>
         <nav className="workspace-nav os-nav" aria-label="Navegación del despacho" data-tour="navigation">
           {groups.map((group) => (
@@ -92,6 +99,7 @@ export function WorkspaceChrome({
                   className={`os-nav-item ${section === item.href ? "is-active" : ""} ${item.accent ? "is-accent" : ""}`}
                   onClick={() => setMobileOpen(false)}
                   data-tour={item.href === "/panel/nuevo-render" ? "render-lab" : item.href === "/panel/proyectos" ? "projects" : item.href === "/panel/finanzas" ? "finances" : undefined}
+                  title={collapsed ? item.label : undefined}
                 >
                   <i>{item.icon}</i><b>{item.label}</b>
                 </Link>
@@ -103,7 +111,7 @@ export function WorkspaceChrome({
           <span className="workspace-avatar">{userName.slice(0, 1).toUpperCase()}</span>
           <div>
             <strong>{userName}</strong>
-            <small>{role === "admin" ? "Dirección" : "Equipo Muromío"}</small>
+            <small>{role === "admin" ? "Administrador" : role === "client" ? "Cliente" : "Staff Muromío"}</small>
           </div>
           <form action="/auth/signout" method="post">
             <button type="submit" aria-label="Cerrar sesión">↗</button>
@@ -114,7 +122,7 @@ export function WorkspaceChrome({
       <button className={`os-scrim ${mobileOpen ? "is-visible" : ""}`} aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />
       <div className="os-stage">
         <header className="os-topbar">
-          <button className="os-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menú">☰</button>
+          <button className="os-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" aria-expanded={mobileOpen}>☰</button>
           <div className="os-title">
             <small>{crumb}</small>
             <strong>{title}</strong>
@@ -125,7 +133,7 @@ export function WorkspaceChrome({
           </form>
           <div className="os-top-actions">
             {credits !== undefined ? <span className="os-credits" data-tour="credits"><i>✦</i>{credits === null ? "∞" : Number(credits).toLocaleString("es-MX")} <small>créditos</small></span> : null}
-            <Link href="/panel/nuevo-render" className="os-new-render">+ Nuevo render</Link>
+            {role !== "client" ? <Link href="/panel/nuevo-render" className="os-new-render">+ Nuevo render</Link> : null}
           </div>
         </header>
         <main className="workspace-main os-content">{children}</main>

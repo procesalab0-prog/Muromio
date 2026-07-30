@@ -17,8 +17,8 @@ export default async function AccessRequestsPage() {
 
   const { data: requests } = await supabase
     .from("profiles")
-    .select("id,full_name,email,phone,access_status,requested_at,credit_balance,unlimited_credits,credits_spent,estimated_usd")
-    .neq("role", "admin")
+    .select("id,full_name,email,phone,role,access_status,requested_at,credit_balance,unlimited_credits,credits_spent,estimated_usd")
+    .neq("id", user.id)
     .order("requested_at", { ascending: false });
 
   async function reviewAccess(formData: FormData) {
@@ -53,6 +53,20 @@ export default async function AccessRequestsPage() {
     revalidatePath("/panel/solicitudes");
   }
 
+  async function changeRole(formData: FormData) {
+    "use server";
+    const profileId = String(formData.get("profileId") ?? "");
+    const role = String(formData.get("role") ?? "");
+    if (!profileId || !["admin", "staff", "client"].includes(role)) return;
+    const actionClient = await createClient();
+    const { error } = await actionClient.rpc("set_profile_workspace_role", {
+      p_profile_id: profileId,
+      p_role: role,
+    });
+    if (error) throw new Error(error.message);
+    revalidatePath("/panel/solicitudes");
+  }
+
   return (
     <WorkspaceShell section="/panel/solicitudes" userName={admin.full_name || admin.email || "Muromío"} role={admin.role} credits={admin.unlimited_credits ? null : admin.credit_balance}>
       <WorkspaceHeader eyebrow="Sistema" title="Administración de acceso." description="Aprueba usuarios, revisa consumo y define límites para la prueba de Muromío." />
@@ -66,6 +80,17 @@ export default async function AccessRequestsPage() {
               <small style={{ color: request.access_status === "approved" ? "#47704b" : request.access_status === "rejected" ? "var(--rust)" : "#817770" }}>
                 {request.access_status === "approved" ? "Aprobado" : request.access_status === "rejected" ? "Rechazado" : "Pendiente"}
               </small>
+              <form action={changeRole} className="access-role-form">
+                <input type="hidden" name="profileId" value={request.id} />
+                <label>Rol en Muromío OS
+                  <select name="role" defaultValue={request.role}>
+                    <option value="staff">Staff — trabaja y edita</option>
+                    <option value="client">Cliente — acceso a proyectos asignados</option>
+                    <option value="admin">Administrador — control total</option>
+                  </select>
+                </label>
+                <button type="submit">Guardar rol</button>
+              </form>
               <p style={{ margin: "10px 0 0", fontSize: 13, color: "#655d58" }}>
                 {request.unlimited_credits ? "Sin límite" : `${request.credit_balance ?? 0} créditos restantes`}
                 {" · "}{request.credits_spent ?? 0} usados

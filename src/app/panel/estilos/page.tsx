@@ -1,9 +1,9 @@
 import { createStyle } from "@/app/panel/actions";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
-import { requireWorkspace } from "@/lib/workspace";
+import { requireTeamWorkspace } from "@/lib/workspace";
 
 export default async function StylesPage() {
-  const { supabase, profile } = await requireWorkspace();
+  const { supabase, profile } = await requireTeamWorkspace();
   const { data: styles } = await supabase.from("style_library").select("*").eq("is_active", true).order("is_signature", { ascending: false });
   return (
     <WorkspaceShell section="/panel/estilos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>

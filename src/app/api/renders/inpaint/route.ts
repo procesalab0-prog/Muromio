@@ -23,11 +23,11 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status")
+    .select("access_status,role")
     .eq("id", user.id)
     .single();
 
-  if (profile?.access_status !== "approved") {
+  if (profile?.access_status !== "approved" || profile.role === "client") {
     return NextResponse.json(
       { error: "Tu acceso a la prueba todavía no ha sido aprobado." },
       { status: 403 },

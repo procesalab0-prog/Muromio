@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireWorkspace } from "@/lib/workspace";
+import { requireTeamWorkspace, requireWorkspace } from "@/lib/workspace";
 
 function text(formData: FormData, key: string, max = 500) {
   return String(formData.get(key) ?? "").trim().slice(0, max);
@@ -37,8 +37,40 @@ async function recordActivity(
   });
 }
 
+async function requireProjectEditor(projectId: string) {
+  const workspace = await requireWorkspace();
+  const { data: allowed, error } = await workspace.supabase.rpc("can_edit_project", {
+    target_project_id: projectId,
+  });
+  if (error || !allowed) throw new Error("No tienes permiso para editar este proyecto.");
+  return workspace;
+}
+
+export async function updateProject(projectId: string, formData: FormData) {
+  const { supabase } = await requireProjectEditor(projectId);
+  const name = text(formData, "name", 120);
+  if (!name) throw new Error("El nombre del proyecto es obligatorio.");
+  const { error } = await supabase.from("projects").update({
+    name,
+    description: optionalText(formData, "description", 1500),
+    project_type: optionalText(formData, "project_type", 100),
+    location: optionalText(formData, "location", 180),
+    area_m2: numberValue(formData, "area_m2"),
+    target_budget: numberValue(formData, "target_budget"),
+    due_date: optionalText(formData, "due_date", 20),
+    status: text(formData, "status", 30) || "planning",
+    stage: text(formData, "stage", 30) || "brief",
+    updated_at: new Date().toISOString(),
+  }).eq("id", projectId);
+  if (error) throw new Error(error.message);
+  await recordActivity(projectId, "project.updated", "project", projectId, `Se actualizó el proyecto ${name}.`);
+  revalidatePath("/panel");
+  revalidatePath("/panel/proyectos");
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
 export async function createClient(formData: FormData) {
-  const { supabase, user } = await requireWorkspace();
+  const { supabase, user } = await requireTeamWorkspace();
   const name = text(formData, "name", 140);
   if (!name) throw new Error("El nombre del cliente es obligatorio.");
 
@@ -63,7 +95,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function createProject(formData: FormData) {
-  const { supabase } = await requireWorkspace();
+  const { supabase } = await requireTeamWorkspace();
   const name = text(formData, "name", 120);
   if (!name) throw new Error("El nombre del proyecto es obligatorio.");
 
@@ -86,7 +118,7 @@ export async function createProject(formData: FormData) {
 }
 
 export async function createStyle(formData: FormData) {
-  const { supabase, user } = await requireWorkspace();
+  const { supabase, user } = await requireTeamWorkspace();
   const name = text(formData, "name", 120);
   if (!name) throw new Error("El nombre del estilo es obligatorio.");
   const slug = name
@@ -348,7 +380,7 @@ export async function updatePaymentStatus(paymentId: string, formData: FormData)
 }
 
 export async function addProjectMember(projectId: string, formData: FormData) {
-  const { supabase } = await requireWorkspace();
+  const { supabase } = await requireProjectEditor(projectId);
   const email = text(formData, "email", 180);
   const role = text(formData, "role", 30) || "architect";
   if (!email) return;
@@ -360,6 +392,18 @@ export async function addProjectMember(projectId: string, formData: FormData) {
   if (error) throw new Error(error.message.includes("approved_user_not_found")
     ? "No encontramos una cuenta aprobada con ese correo."
     : error.message);
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function removeProjectMember(projectId: string, userId: string) {
+  const { supabase } = await requireProjectEditor(projectId);
+  const { error } = await supabase
+    .from("project_members")
+    .delete()
+    .eq("project_id", projectId)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  await recordActivity(projectId, "member.removed", "profile", userId, "Se retiró un acceso del proyecto.");
   revalidatePath(`/panel/proyectos/${projectId}`);
 }
 

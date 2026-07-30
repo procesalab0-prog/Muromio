@@ -27,6 +27,7 @@ export default async function NewRenderPage({
   if (profile?.access_status !== "approved") {
     redirect("/solicitud-pendiente");
   }
+  if (profile.role === "client") redirect("/panel/proyectos");
 
   return (
     <WorkspaceShell section="/panel/nuevo-render" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>

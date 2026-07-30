@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, requestApproval, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
+import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, removeProjectMember, requestApproval, updateProject, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
 import { BeforeAfter } from "@/components/before-after";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
@@ -11,7 +11,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, profile } = await requireWorkspace();
+  const { supabase, profile, user } = await requireWorkspace();
   const [
     { data: project },
     { data: phases },
@@ -43,6 +43,10 @@ export default async function ProjectDetailPage({
   ]);
 
   if (!project) notFound();
+  const ownMembership = (members ?? []).find((member) => member.user_id === user.id);
+  const canEdit = profile.role === "admin"
+    || project.owner_id === user.id
+    || (profile.role === "staff" && ["director", "architect", "designer"].includes(ownMembership?.role ?? ""));
   const taskAction = createTask.bind(null, id);
   const budgetAction = createBudget.bind(null, id);
   const commentAction = createComment.bind(null, id);
@@ -76,7 +80,7 @@ export default async function ProjectDetailPage({
         eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
         title={project.name}
         description={project.description || "Expediente central del proyecto."}
-        actions={<><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir ↗</a></>}
+        actions={canEdit ? <><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir ↗</a></> : undefined}
       />
 
       <section className="project-overview">
@@ -96,25 +100,49 @@ export default async function ProjectDetailPage({
         </article>
       </section>
 
+      {canEdit ? (
+        <details className="workspace-card project-settings">
+          <summary><span>Editar información del proyecto</span><b>Configurar +</b></summary>
+          <form action={updateProject.bind(null, id)} className="workspace-form project-settings-form">
+            <div className="form-pair">
+              <label>Nombre<input name="name" required defaultValue={project.name} /></label>
+              <label>Tipo<input name="project_type" defaultValue={project.project_type || ""} placeholder="Residencial, hospitality…" /></label>
+            </div>
+            <label>Descripción<textarea name="description" rows={3} defaultValue={project.description || ""} /></label>
+            <div className="form-triple">
+              <label>Ubicación<input name="location" defaultValue={project.location || ""} /></label>
+              <label>Superficie m²<input name="area_m2" type="number" min="0" step="0.01" defaultValue={project.area_m2 || ""} /></label>
+              <label>Presupuesto objetivo<input name="target_budget" type="number" min="0" step="0.01" defaultValue={project.target_budget || ""} /></label>
+            </div>
+            <div className="form-triple">
+              <label>Entrega<input name="due_date" type="date" defaultValue={project.due_date || ""} /></label>
+              <label>Estado<select name="status" defaultValue={project.status}><option value="planning">Planeación</option><option value="active">Activo</option><option value="on_hold">En pausa</option><option value="completed">Completado</option><option value="archived">Archivado</option></select></label>
+              <label>Etapa<select name="stage" defaultValue={project.stage}><option value="brief">Brief</option><option value="concept">Concepto</option><option value="design">Diseño</option><option value="development">Desarrollo</option><option value="procurement">Compras</option><option value="construction">Obra</option><option value="delivery">Entrega</option></select></label>
+            </div>
+            <button className="button-primary" type="submit">Guardar cambios</button>
+          </form>
+        </details>
+      ) : null}
+
       <section className="project-command-grid">
         <article className="workspace-card project-command-main">
           <div className="workspace-card-head"><div><small>Control de producción</small><h2>Tareas y entregables</h2></div><span>{(tasks ?? []).filter((task) => task.status !== "done").length} abiertas</span></div>
-          <form action={taskAction} className="quick-add">
+          {canEdit ? <form action={taskAction} className="quick-add">
             <input name="title" required placeholder="Agregar una tarea al proyecto…" />
             <select name="priority" defaultValue="normal"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select>
             <input name="due_at" type="date" />
             <button type="submit">Agregar</button>
-          </form>
+          </form> : null}
           <div className="task-board">
             {["todo", "in_progress", "review", "done"].map((status) => (
               <div key={status}>
                 <h3>{taskStatus(status)} <span>{(tasks ?? []).filter((task) => task.status === status).length}</span></h3>
                 {(tasks ?? []).filter((task) => task.status === status).map((task) => (
                   <article key={task.id}><i className={`priority-${task.priority}`} /><strong>{task.title}</strong><p>{task.description || "Sin notas adicionales"}</p><small>{task.due_at ? shortDate(task.due_at) : "Sin fecha"}</small>
-                    <form action={updateTaskStatus.bind(null, id, task.id)} className="task-status-form">
+                    {canEdit ? <form action={updateTaskStatus.bind(null, id, task.id)} className="task-status-form">
                       <select name="status" defaultValue={task.status}>{["todo", "in_progress", "review", "done"].map((value) => <option value={value} key={value}>{taskStatus(value)}</option>)}</select>
                       <button type="submit">Actualizar</button>
-                    </form>
+                    </form> : null}
                   </article>
                 ))}
               </div>
@@ -125,31 +153,32 @@ export default async function ProjectDetailPage({
         <aside className="project-command-side">
           <article className="workspace-card">
             <div className="workspace-card-head"><div><small>Cliente</small><h2>Aprobaciones</h2></div><span>{(approvals ?? []).filter((item) => item.status === "pending").length}</span></div>
-            <form action={approvalAction} className="workspace-form compact-form">
+            {canEdit ? <form action={approvalAction} className="workspace-form compact-form">
               <input name="reviewer_name" placeholder="Nombre del cliente" defaultValue={relationOne(project.client)?.name || ""} />
               <input name="reviewer_email" type="email" placeholder="Correo para revisión" defaultValue={relationOne(project.client)?.email || ""} />
               <select name="version_id" defaultValue=""><option value="">Proyecto general</option>{(versions ?? []).map((version) => <option key={version.id} value={version.id}>V{version.version_number} · {version.title}</option>)}</select>
               <textarea name="message" rows={2} placeholder="Mensaje de presentación…" />
               <button className="button-primary" type="submit">Solicitar aprobación</button>
-            </form>
+            </form> : null}
             <div className="approval-list">{(approvals ?? []).slice(0, 4).map((item) => <p key={item.id}><span className={`approval-${item.status}`} />{item.reviewer_name || "Cliente"}<small>{approvalStatus(item.status)}</small></p>)}</div>
           </article>
           <article className="workspace-card">
             <div className="workspace-card-head"><div><small>Conversación</small><h2>Bitácora</h2></div></div>
             <form action={commentAction} className="workspace-form compact-form">
               <textarea name="body" required rows={3} placeholder="Registrar una decisión o comentario…" />
-              <div className="form-pair"><select name="visibility" defaultValue="team"><option value="team">Solo equipo</option><option value="client">Visible al cliente</option></select><button className="button-secondary" type="submit">Publicar</button></div>
+              <div className="form-pair">{canEdit ? <select name="visibility" defaultValue="team"><option value="team">Solo equipo</option><option value="client">Visible al cliente</option></select> : <input type="hidden" name="visibility" value="client" />}<button className="button-secondary" type="submit">Publicar</button></div>
             </form>
             <div className="comment-list">{(comments ?? []).slice(0, 5).map((comment) => <article key={comment.id}><strong>{comment.author_name || "Muromío"}</strong><small>{comment.visibility === "client" ? "Cliente" : "Interno"} · {shortDate(comment.created_at)}</small><p>{comment.body}</p></article>)}</div>
           </article>
-          <article className="workspace-card">
+          {canEdit ? <article className="workspace-card">
             <div className="workspace-card-head"><div><small>Colaboración</small><h2>Equipo del proyecto</h2></div><span>{(members?.length ?? 0) + 1}</span></div>
             <form action={memberAction} className="workspace-form compact-form">
               <input name="email" type="email" required placeholder="Correo de una cuenta aprobada" />
               <div className="form-pair"><select name="role" defaultValue="architect"><option value="director">Dirección</option><option value="architect">Arquitectura</option><option value="designer">Diseño</option><option value="viewer">Consulta</option><option value="client">Cliente</option></select><button className="button-secondary" type="submit">Agregar</button></div>
             </form>
-            <div className="comment-list"><article><strong>{profile.full_name || profile.email}</strong><small>Responsable del proyecto</small></article>{(members ?? []).map((member) => <article key={member.user_id}><strong>{relationOne(member.profile)?.full_name || relationOne(member.profile)?.email || "Colaborador"}</strong><small>{member.role}</small></article>)}</div>
+            <div className="comment-list"><article><strong>{profile.full_name || profile.email}</strong><small>Responsable del proyecto</small></article>{(members ?? []).map((member) => <article key={member.user_id}><div><strong>{relationOne(member.profile)?.full_name || relationOne(member.profile)?.email || "Colaborador"}</strong><small>{memberRole(member.role)}</small></div><form action={removeProjectMember.bind(null, id, member.user_id)}><button type="submit" className="member-remove">Quitar</button></form></article>)}</div>
           </article>
+          : null}
         </aside>
       </section>
 
@@ -158,18 +187,18 @@ export default async function ProjectDetailPage({
           <div className="workspace-card-head"><div><small>Historial creativo</small><h2>Versiones</h2></div><span>{(versions ?? []).length}</span></div>
           {(versions ?? []).slice(0, 4).map((version) => <div className="version-row" key={version.id}><b>V{version.version_number}</b><div><strong>{version.title}</strong><small>{version.status} · {shortDate(version.created_at)}</small></div></div>)}
           {!(versions ?? []).length ? <p className="muted">{renders?.length ?? 0} renders existentes. La próxima generación podrá convertirse en versión formal.</p> : null}
-          <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual →</Link>
+          {canEdit ? <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual →</Link> : null}
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Finanzas</small><h2>Presupuestos</h2></div><span>{(budgets ?? []).length}</span></div>
-          <form action={budgetAction} className="workspace-form compact-form">
+          {canEdit ? <form action={budgetAction} className="workspace-form compact-form">
             <input name="title" required placeholder="Honorarios de diseño" />
             <input name="subtotal" required type="number" min="0" placeholder="Subtotal antes de IVA" />
             <input name="valid_until" type="date" />
             <button className="button-primary" type="submit">Preparar presupuesto</button>
-          </form>
+          </form> : null}
           {(budgets ?? []).slice(0, 3).map((budget) => <div className="budget-row" key={budget.id}><div><strong>{budget.number}</strong><small>{budget.title}</small></div><span>{money(budget.total)}</span></div>)}
-          {budgets?.[0] ? (
+          {canEdit && budgets?.[0] ? (
             <form action={createBudgetItem.bind(null, id, budgets[0].id)} className="workspace-form compact-form">
               <small>Agregar partida a {budgets[0].number}</small>
               <input name="concept" required placeholder="Concepto" />
@@ -177,24 +206,24 @@ export default async function ProjectDetailPage({
               <button className="button-secondary" type="submit">Agregar partida</button>
             </form>
           ) : null}
-          <form action={paymentAction} className="workspace-form compact-form">
+          {canEdit ? <form action={paymentAction} className="workspace-form compact-form">
             <small>Programar cobro</small>
             <input name="concept" required placeholder="Anticipo o parcialidad" />
             <div className="form-pair"><input name="amount" required type="number" min="0.01" step="0.01" placeholder="Importe" /><input name="due_on" type="date" /></div>
             <select name="budget_id" defaultValue=""><option value="">Sin presupuesto asociado</option>{(budgets ?? []).map((budget) => <option value={budget.id} key={budget.id}>{budget.number}</option>)}</select>
             <button className="button-secondary" type="submit">Programar</button>
-          </form>
+          </form> : null}
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Centro de archivos</small><h2>Entregables</h2></div><span>{(files ?? []).length}</span></div>
           <div className="file-category-grid">
             {["plan", "render", "budget", "contract", "video", "delivery"].map((category) => <div key={category}><strong>{(files ?? []).filter((file) => file.category === category).length}</strong><span>{fileCategory(category)}</span></div>)}
           </div>
-          <form action={fileAction} className="workspace-form compact-form">
+          {canEdit ? <form action={fileAction} className="workspace-form compact-form">
             <input name="file" type="file" required />
             <div className="form-pair"><select name="category" defaultValue="other"><option value="plan">Plano</option><option value="reference">Referencia</option><option value="contract">Contrato</option><option value="budget">Presupuesto</option><option value="delivery">Entrega</option><option value="other">Otro</option></select><label className="checkbox-label"><input name="is_client_visible" type="checkbox" /> Visible al cliente</label></div>
             <button className="button-secondary" type="submit">Subir archivo</button>
-          </form>
+          </form> : null}
           {fileLinks.map((file) => file.signedUrl ? <a className="tool-result" href={file.signedUrl} target="_blank" rel="noreferrer" key={file.id}><span>{file.name}</span><small>{fileCategory(file.category)} ↗</small></a> : null)}
         </article>
       </section>
@@ -212,12 +241,12 @@ export default async function ProjectDetailPage({
           <div className="workspace-card-head"><div><small>Marca blanca</small><h2>Presentar y entregar</h2></div></div>
           <details open>
             <summary>Enlace privado <span>{shareLinks?.length ?? 0}</span></summary>
-            <form action={shareAction} className="workspace-form compact-form">
+            {canEdit ? <form action={shareAction} className="workspace-form compact-form">
               <input name="label" placeholder="Presentación de concepto" />
               <div className="form-pair"><input name="expires_at" type="date" /><select name="version_id" defaultValue=""><option value="">Proyecto completo</option>{(versions ?? []).map((version) => <option key={version.id} value={version.id}>V{version.version_number}</option>)}</select></div>
               <label className="checkbox-label"><input name="allow_download" type="checkbox" /> Permitir descargas</label>
               <button className="button-secondary" type="submit">Crear enlace</button>
-            </form>
+            </form> : null}
             {(shareLinks ?? []).slice(0, 2).map((link) => <p className="tool-result" key={link.id}><span>{link.label}</span><Link href={`/presentacion/${link.token}`} target="_blank">Abrir ↗</Link></p>)}
           </details>
           <details>
@@ -227,11 +256,11 @@ export default async function ProjectDetailPage({
           </details>
           <details>
             <summary>Documento Muromío <span>{documents?.length ?? 0}</span></summary>
-            <form action={documentAction} className="workspace-form compact-form">
+            {canEdit ? <form action={documentAction} className="workspace-form compact-form">
               <select name="document_type" defaultValue="proposal"><option value="proposal">Propuesta de diseño</option><option value="brief">Brief</option><option value="minutes">Minuta</option><option value="spec_sheet">Fichas técnicas</option><option value="weekly_report">Reporte semanal</option><option value="approval">Acta de aprobación</option><option value="delivery_manual">Manual de entrega</option></select>
               <input name="title" placeholder="Título personalizado (opcional)" />
               <button className="button-secondary" type="submit">Crear documento</button>
-            </form>
+            </form> : null}
             {(documents ?? []).slice(0, 3).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><Link href={`/panel/proyectos/${id}/documentos/${document.id}`} target="_blank">Abrir ↗</Link></p>)}
           </details>
         </article>
@@ -248,4 +277,7 @@ function approvalStatus(status: string) {
 }
 function fileCategory(category: string) {
   return ({ plan: "Planos", render: "Renders", budget: "Presupuestos", contract: "Contratos", video: "Videos", delivery: "Entrega" } as Record<string, string>)[category] || category;
+}
+function memberRole(role: string) {
+  return ({ director: "Dirección", architect: "Arquitectura", designer: "Diseño", viewer: "Consulta", client: "Cliente" } as Record<string, string>)[role] || role;
 }

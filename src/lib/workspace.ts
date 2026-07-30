@@ -20,6 +20,12 @@ export async function requireWorkspace() {
   return { supabase, user, profile };
 }
 
+export async function requireTeamWorkspace() {
+  const workspace = await requireWorkspace();
+  if (workspace.profile.role === "client") redirect("/panel/proyectos");
+  return workspace;
+}
+
 export function money(value: number | string | null | undefined, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", {
     style: "currency",

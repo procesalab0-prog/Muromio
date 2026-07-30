@@ -1,9 +1,9 @@
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
 import { updatePaymentStatus } from "@/app/panel/actions";
-import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
+import { money, relationOne, requireTeamWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function FinancePage() {
-  const { supabase, profile } = await requireWorkspace();
+  const { supabase, profile } = await requireTeamWorkspace();
   const [{ data: budgets }, { data: payments }, { data: projects }] = await Promise.all([
     supabase.from("budgets").select("*,project:projects(name),items:budget_items(*)").order("created_at", { ascending: false }),
     supabase.from("payments").select("*,project:projects(name)").order("due_on", { ascending: true }),
@@ -13,6 +13,19 @@ export default async function FinancePage() {
   const approved = (budgets ?? []).filter((item) => item.status === "approved").reduce((sum, item) => sum + Number(item.total ?? 0), 0);
   const collected = (payments ?? []).filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const pending = (payments ?? []).filter((item) => ["pending", "overdue"].includes(item.status)).reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+  const now = new Date();
+  const monthlyIncome = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+    const amount = (payments ?? [])
+      .filter((payment) => {
+        if (payment.status !== "paid" || !payment.paid_at) return false;
+        const paidAt = new Date(payment.paid_at);
+        return paidAt.getFullYear() === date.getFullYear() && paidAt.getMonth() === date.getMonth();
+      })
+      .reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
+    return { label: new Intl.DateTimeFormat("es-MX", { month: "short" }).format(date), amount };
+  });
+  const maxMonthlyIncome = Math.max(1, ...monthlyIncome.map((item) => item.amount));
   return (
     <WorkspaceShell section="/panel/finanzas" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader eyebrow="Administración creativa" title="Diseñar también es medir." description="Honorarios, presupuestos y cobranza conectados con cada proyecto." />
@@ -21,6 +34,18 @@ export default async function FinancePage() {
         <article><span>Aprobado</span><strong>{money(approved)}</strong><small>trabajo contratado</small></article>
         <article><span>Cobrado</span><strong>{money(collected)}</strong><small>ingreso realizado</small></article>
         <article className="is-accent"><span>Por cobrar</span><strong>{money(pending)}</strong><small>próximos pagos</small></article>
+      </section>
+      <section className="workspace-card finance-chart-card">
+        <div className="workspace-card-head"><div><small>Ingreso realizado</small><h2>Cobranza de los últimos 6 meses</h2></div><strong>{money(collected)}</strong></div>
+        <div className="os-column-chart">
+          {monthlyIncome.map((item) => (
+            <div key={item.label}>
+              <strong>{item.amount ? money(item.amount) : "—"}</strong>
+              <i><b style={{ height: `${Math.max(item.amount ? 8 : 2, (item.amount / maxMonthlyIncome) * 100)}%` }} /></i>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
       <section className="workspace-grid workspace-grid-main">
         <article className="workspace-card workspace-card-wide">

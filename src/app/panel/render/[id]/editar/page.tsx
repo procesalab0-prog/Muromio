@@ -18,13 +18,14 @@ export default async function EditRenderPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status,credit_balance,unlimited_credits")
+    .select("access_status,role,credit_balance,unlimited_credits")
     .eq("id", user.id)
     .single();
 
   if (profile?.access_status !== "approved") {
     redirect("/solicitud-pendiente");
   }
+  if (profile.role === "client") redirect("/panel/proyectos");
 
   const { data: render } = await supabase
     .from("renders")

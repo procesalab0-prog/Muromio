@@ -1,9 +1,9 @@
 import { createClient } from "@/app/panel/actions";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
-import { requireWorkspace, shortDate } from "@/lib/workspace";
+import { requireTeamWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function ClientsPage() {
-  const { supabase, profile } = await requireWorkspace();
+  const { supabase, profile } = await requireTeamWorkspace();
   const { data: clients } = await supabase
     .from("clients")
     .select("id,name,email,phone,company,status,created_at,projects(id,name,status)")

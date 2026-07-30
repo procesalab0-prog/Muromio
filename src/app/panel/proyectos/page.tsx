@@ -26,9 +26,9 @@ export default async function ProjectsPage({
         eyebrow={q ? "Resultados de búsqueda" : "Portafolio operativo"}
         title={q ? `Proyectos para “${q}”` : "Proyectos con contexto."}
         description="Del brief a la entrega, cada versión y decisión queda conectada."
-        actions={<Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link>}
+        actions={profile.role !== "client" ? <Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link> : undefined}
       />
-      {nuevo ? (
+      {nuevo && profile.role !== "client" ? (
         <section className="workspace-card project-create">
           <div className="workspace-card-head"><div><small>Alta de proyecto</small><h2>Crear un nuevo espacio</h2></div><Link href="/panel/proyectos">Cerrar ×</Link></div>
           <form action={createProject} className="workspace-form">
@@ -76,7 +76,7 @@ export default async function ProjectsPage({
             </Link>
           );
         })}
-        {!(projects ?? []).length ? <div className="workspace-empty"><span>El portafolio operativo está listo para su primer proyecto.</span><Link href="/panel/proyectos?nuevo=1">Crear proyecto</Link></div> : null}
+        {!(projects ?? []).length ? <div className="workspace-empty"><span>{profile.role === "client" ? "Aún no tienes proyectos asignados." : "El portafolio operativo está listo para su primer proyecto."}</span>{profile.role !== "client" ? <Link href="/panel/proyectos?nuevo=1">Crear proyecto</Link> : null}</div> : null}
       </section>
     </WorkspaceShell>
   );
