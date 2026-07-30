@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { WorkspaceTour } from "./workspace-tour";
 
 const navigation = [
   {
@@ -21,7 +22,7 @@ const navigation = [
     label: "Inteligencia",
     items: [
       { href: "/panel/nuevo-render", label: "Render Lab", icon: "✦", accent: true },
-      { href: "/panel/estilos", label: "Biblioteca de estilos", icon: "❖" },
+      { href: "/panel/estilos", label: "Estilos", icon: "❖" },
       { href: "", label: "Videos", icon: "▷", soon: true },
     ],
   },
@@ -70,13 +71,13 @@ export function WorkspaceChrome({
       <aside className={`workspace-sidebar os-sidebar ${mobileOpen ? "is-open" : ""}`}>
         <div className="os-brand-row">
           <Link href="/" className="workspace-brand os-brand">
-            <span>muro</span>mío
+            Muromío <small>OS</small>
           </Link>
           <button className="os-collapse" onClick={() => setCollapsed((value) => !value)} aria-label="Colapsar menú">
             {collapsed ? "›" : "‹"}
           </button>
         </div>
-        <nav className="workspace-nav os-nav" aria-label="Navegación del despacho">
+        <nav className="workspace-nav os-nav" aria-label="Navegación del despacho" data-tour="navigation">
           {groups.map((group) => (
             <div className="os-nav-group" key={group.label}>
               <small className="os-nav-label">{group.label}</small>
@@ -90,6 +91,7 @@ export function WorkspaceChrome({
                   href={item.href}
                   className={`os-nav-item ${section === item.href ? "is-active" : ""} ${item.accent ? "is-accent" : ""}`}
                   onClick={() => setMobileOpen(false)}
+                  data-tour={item.href === "/panel/nuevo-render" ? "render-lab" : item.href === "/panel/proyectos" ? "projects" : item.href === "/panel/finanzas" ? "finances" : undefined}
                 >
                   <i>{item.icon}</i><b>{item.label}</b>
                 </Link>
@@ -106,6 +108,7 @@ export function WorkspaceChrome({
           <form action="/auth/signout" method="post">
             <button type="submit" aria-label="Cerrar sesión">↗</button>
           </form>
+          <button type="button" className="os-tour-launch" aria-label="Ver tutorial" title="Ver tutorial" onClick={() => window.dispatchEvent(new Event("muromio:tour"))}>?</button>
         </div>
       </aside>
       <button className={`os-scrim ${mobileOpen ? "is-visible" : ""}`} aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />
@@ -116,17 +119,18 @@ export function WorkspaceChrome({
             <small>{crumb}</small>
             <strong>{title}</strong>
           </div>
-          <form className="os-search" action="/panel/proyectos">
+          <form className="os-search" action="/panel/proyectos" data-tour="search">
             <span>⌕</span>
             <input name="q" placeholder="Buscar proyectos…" aria-label="Buscar proyectos" />
           </form>
           <div className="os-top-actions">
-            {credits !== undefined ? <span className="os-credits"><i>✦</i>{credits === null ? "∞" : Number(credits).toLocaleString("es-MX")} <small>créditos</small></span> : null}
+            {credits !== undefined ? <span className="os-credits" data-tour="credits"><i>✦</i>{credits === null ? "∞" : Number(credits).toLocaleString("es-MX")} <small>créditos</small></span> : null}
             <Link href="/panel/nuevo-render" className="os-new-render">+ Nuevo render</Link>
           </div>
         </header>
         <main className="workspace-main os-content">{children}</main>
       </div>
+      <WorkspaceTour />
     </div>
   );
 }
