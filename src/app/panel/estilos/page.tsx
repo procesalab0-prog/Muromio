@@ -6,7 +6,7 @@ export default async function StylesPage() {
   const { supabase, profile } = await requireWorkspace();
   const { data: styles } = await supabase.from("style_library").select("*").eq("is_active", true).order("is_signature", { ascending: false });
   return (
-    <WorkspaceShell section="/panel/estilos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/estilos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader eyebrow="Inteligencia propia" title="El ADN visual de Muromío." description="Materiales, atmósferas y reglas que hacen reconocible cada propuesta." />
       <section className="style-library">
         {(styles ?? []).map((style, index) => (

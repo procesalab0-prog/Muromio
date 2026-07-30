@@ -71,7 +71,7 @@ export default async function ProjectDetailPage({
   );
 
   return (
-    <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader
         eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
         title={project.name}

@@ -85,91 +85,80 @@ export function RenderForm({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 28 }}>
-      <form onSubmit={handleSubmit} style={{ padding: "clamp(24px,4vw,42px)", background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 24, padding: "12px 14px", background: "#fffdf8", border: "1px solid rgba(158,75,61,.24)" }}>
+    <div className="render-os-grid">
+      <form onSubmit={handleSubmit} className="render-os-controls">
+        <div className="render-os-balance">
           <strong>Saldo</strong>
           <span style={{ color: "var(--rust)" }}>{unlimitedCredits ? "Sin límite" : `${credits} créditos`}</span>
         </div>
         {sourceRenderId ? <input type="hidden" name="sourceRenderId" value={sourceRenderId} /> : null}
-        <label style={labelStyle}>
+        <label>
           Nombre del proyecto
           <input
             name="projectName"
             required
             maxLength={120}
-            style={fieldStyle}
             placeholder="Casa Roble"
             defaultValue={sourceRenderId ? "Nueva variación" : ""}
           />
         </label>
-        <label style={labelStyle}>
+        <label>
           Tipo de imagen
-          <select name="mode" style={fieldStyle} value={mode} onChange={(event) => setMode(event.target.value)}>
+          <select name="mode" value={mode} onChange={(event) => setMode(event.target.value)}>
             <option value="sketch">Plano o boceto</option>
             <option value="structure">Fotografía o render base</option>
             <option value="style-transfer">Transferir estilo de una referencia</option>
           </select>
         </label>
         {sourceRenderId ? (
-          <div style={{ ...labelStyle, padding: 14, background: "#fffdf8", border: "1px solid rgba(38,34,32,.14)" }}>
+          <div className="render-os-selected">
             <strong>Render base seleccionado</strong>
             <small>La nueva versión conservará la composición del render anterior.</small>
           </div>
         ) : (
-          <label style={labelStyle}>
+          <label>
             Imagen base
-            <input name="image" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
+            <input name="image" type="file" required accept="image/png,image/jpeg,image/webp" />
             <small>PNG, JPG o WEBP · optimizamos el archivo automáticamente</small>
           </label>
         )}
         {mode === "style-transfer" ? (
-          <label style={labelStyle}>
+          <label>
             Referencia de estilo Muromío
-            <input name="styleImage" type="file" required accept="image/png,image/jpeg,image/webp" style={fieldStyle} />
+            <input name="styleImage" type="file" required accept="image/png,image/jpeg,image/webp" />
             <small>Usaremos sus materiales, color e iluminación; optimizaremos ambas imágenes antes de enviarlas.</small>
           </label>
         ) : null}
-        <label style={labelStyle}>
+        <label>
           Estilo
-          <select name="style" style={fieldStyle}>
+          <select name="style">
             {styles.map((style) => <option key={style}>{style}</option>)}
           </select>
         </label>
-        <label style={labelStyle}>
+        <label>
           Materiales y detalles
           <textarea
             name="details"
             maxLength={1200}
             rows={5}
-            style={{ ...fieldStyle, paddingBlock: 12, resize: "vertical" }}
             placeholder="Travertino, madera clara, luz de tarde, vegetación interior…"
           />
         </label>
         <button
           type="submit"
           disabled={pending}
-          style={{
-            width: "100%",
-            minHeight: 50,
-            border: 0,
-            background: "var(--rust)",
-            color: "var(--cream)",
-            cursor: pending ? "wait" : "pointer",
-            font: "inherit",
-            opacity: pending ? 0.65 : 1,
-          }}
+          className="render-os-submit"
         >
           {pending ? "Generando…" : `Generar render · ${mode === "style-transfer" ? 8 : 6} créditos`}
         </button>
-        {message ? <p role="status" style={{ color: "#655d58", lineHeight: 1.5 }}>{message}</p> : null}
+        {message ? <p role="status" className="render-os-message">{message}</p> : null}
       </form>
 
-      <div style={{ minHeight: 420, display: "grid", placeItems: "center", alignContent: "center", gap: 16, background: "#d8cec1", border: "1px solid rgba(38,34,32,.1)", overflow: "hidden" }}>
+      <div className={`render-os-canvas ${pending ? "is-loading" : ""}`}>
         {result ? (
           <>
-            <Image src={result} alt="Render generado" width={1400} height={1050} unoptimized style={{ width: "100%", height: "auto" }} />
-            <div style={{ display: "flex", gap: 10, padding: "0 16px 16px", flexWrap: "wrap", justifyContent: "center" }}>
+            <Image src={result} alt="Render generado" width={1400} height={1050} unoptimized />
+            <div className="render-os-result-actions">
               <a href={result} download="muromio-render.webp" style={actionStyle}>
                 Descargar
               </a>
@@ -179,31 +168,12 @@ export function RenderForm({
             </div>
           </>
         ) : (
-          <p style={{ maxWidth: 280, padding: 24, textAlign: "center", color: "#655d58", lineHeight: 1.6 }}>
-            Tu render aparecerá aquí cuando termine la generación.
-          </p>
+          <div className="render-os-empty"><span>✦</span><strong>{pending ? "Construyendo propuesta…" : "Lienzo de trabajo"}</strong><p>{pending ? message : "Tu render aparecerá aquí al terminar la generación."}</p></div>
         )}
       </div>
     </div>
   );
 }
-
-const labelStyle = {
-  display: "grid",
-  gap: 8,
-  marginBottom: 18,
-  fontSize: 13,
-} as const;
-
-const fieldStyle = {
-  width: "100%",
-  minHeight: 46,
-  paddingInline: 12,
-  border: "1px solid rgba(38,34,32,.24)",
-  background: "#fffdf8",
-  color: "var(--ink)",
-  font: "inherit",
-} as const;
 
 const actionStyle = {
   display: "inline-flex",

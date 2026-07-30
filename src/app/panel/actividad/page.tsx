@@ -8,7 +8,7 @@ export default async function ActivityPage() {
     supabase.from("credit_transactions").select("id,amount,estimated_usd,operation,created_at,user:profiles(full_name,email)").order("created_at", { ascending: false }).limit(30),
   ]);
   return (
-    <WorkspaceShell section="/panel/actividad" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/actividad" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader eyebrow="Trazabilidad" title="Nada se pierde." description="Decisiones, cambios y consumo del despacho con contexto y autor." />
       <section className="workspace-grid workspace-grid-main">
         <article className="workspace-card workspace-card-wide">

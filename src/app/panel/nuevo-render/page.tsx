@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { WorkspaceShell } from "@/components/workspace-shell";
 import { createClient } from "@/lib/supabase/server";
 import { RenderForm } from "./render-form";
 
@@ -20,7 +20,7 @@ export default async function NewRenderPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("access_status,credit_balance,unlimited_credits")
+    .select("full_name,email,role,access_status,credit_balance,unlimited_credits")
     .eq("id", user.id)
     .single();
 
@@ -29,23 +29,15 @@ export default async function NewRenderPage({
   }
 
   return (
-    <main style={{ minHeight: "100svh", padding: "clamp(28px,5vw,72px)", background: "var(--sand)" }}>
-      <Link href="/panel" style={{ color: "var(--rust)", textDecoration: "none", fontSize: 13 }}>
-        ← Volver a proyectos
-      </Link>
-      <h1 style={{ margin: "24px 0 12px", fontFamily: "var(--font-lora)", fontSize: "clamp(38px,6vw,64px)", fontWeight: 500 }}>
-        {sourceRenderId ? "Nueva variación" : "Nuevo render"}
-      </h1>
-      <p style={{ maxWidth: 640, margin: "0 0 42px", color: "#655d58", lineHeight: 1.7 }}>
-        {sourceRenderId
-          ? "Usaremos el render anterior como base para explorar otra dirección material sin perder su composición."
-          : "Sube un plano, boceto o imagen base. Muromío conservará su estructura y aplicará la dirección material que elijas."}
-      </p>
-      <RenderForm
-        sourceRenderId={sourceRenderId}
-        initialCredits={profile.credit_balance ?? 0}
-        unlimitedCredits={profile.unlimited_credits ?? false}
-      />
-    </main>
+    <WorkspaceShell section="/panel/nuevo-render" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
+      <section className="render-os-head">
+        <div><span>Motor activo · Stability</span><b>Gemini <em>Próximamente</em></b></div>
+        <h1>{sourceRenderId ? "Nueva variación" : "Render Lab"}</h1>
+        <p>{sourceRenderId
+          ? "Explora otra dirección material sin perder la composición de la versión anterior."
+          : "Convierte un plano, boceto o imagen base en una propuesta visual bajo la dirección de Muromío."}</p>
+      </section>
+      <RenderForm sourceRenderId={sourceRenderId} initialCredits={profile.credit_balance ?? 0} unlimitedCredits={profile.unlimited_credits ?? false} />
+    </WorkspaceShell>
   );
 }

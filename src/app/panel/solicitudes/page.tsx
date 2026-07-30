@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
 
 export default async function AccessRequestsPage() {
   const supabase = await createClient();
@@ -10,7 +10,7 @@ export default async function AccessRequestsPage() {
 
   const { data: admin } = await supabase
     .from("profiles")
-    .select("role,access_status")
+    .select("full_name,email,role,access_status,credit_balance,unlimited_credits")
     .eq("id", user.id)
     .single();
   if (admin?.role !== "admin" || admin.access_status !== "approved") redirect("/panel");
@@ -54,15 +54,11 @@ export default async function AccessRequestsPage() {
   }
 
   return (
-    <main style={{ minHeight: "100svh", padding: "clamp(28px,5vw,72px)", background: "var(--sand)" }}>
-      <Link href="/panel" style={{ color: "var(--rust)", textDecoration: "none", fontSize: 13 }}>← Volver al panel</Link>
-      <h1 style={{ margin: "24px 0 10px", fontFamily: "var(--font-lora)", fontSize: "clamp(38px,6vw,62px)", fontWeight: 500 }}>
-        Solicitudes de acceso
-      </h1>
-      <p style={{ color: "#655d58", marginBottom: 36 }}>Aprueba quién puede entrar a la prueba de Muromío.</p>
-      <div style={{ display: "grid", gap: 12, maxWidth: 900 }}>
+    <WorkspaceShell section="/panel/solicitudes" userName={admin.full_name || admin.email || "Muromío"} role={admin.role} credits={admin.unlimited_credits ? null : admin.credit_balance}>
+      <WorkspaceHeader eyebrow="Sistema" title="Administración de acceso." description="Aprueba usuarios, revisa consumo y define límites para la prueba de Muromío." />
+      <div className="access-request-list">
         {requests?.length ? requests.map((request) => (
-          <article className="access-request-card" key={request.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 20, alignItems: "center", padding: 22, background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
+          <article className="access-request-card workspace-card" key={request.id}>
             <div>
               <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-lora)", fontWeight: 500 }}>{request.full_name || "Sin nombre"}</h2>
               <p style={{ margin: 0, color: "#655d58" }}>{request.email}</p>
@@ -98,7 +94,7 @@ export default async function AccessRequestsPage() {
           </article>
         )) : <p>No hay solicitudes todavía.</p>}
       </div>
-    </main>
+    </WorkspaceShell>
   );
 }
 

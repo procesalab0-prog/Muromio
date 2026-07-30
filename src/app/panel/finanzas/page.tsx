@@ -14,7 +14,7 @@ export default async function FinancePage() {
   const collected = (payments ?? []).filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const pending = (payments ?? []).filter((item) => ["pending", "overdue"].includes(item.status)).reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   return (
-    <WorkspaceShell section="/panel/finanzas" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/finanzas" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader eyebrow="Administración creativa" title="Diseñar también es medir." description="Honorarios, presupuestos y cobranza conectados con cada proyecto." />
       <section className="workspace-metrics">
         <article><span>Total cotizado</span><strong>{money(quoted)}</strong><small>histórico</small></article>

@@ -10,7 +10,7 @@ export default async function ClientsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <WorkspaceShell section="/panel/clientes" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/clientes" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader
         eyebrow="Relaciones"
         title="Clientes con memoria."

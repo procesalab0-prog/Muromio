@@ -46,17 +46,25 @@ export default async function PanelPage() {
   const pipeline = (budgets ?? [])
     .filter((budget) => ["draft", "sent"].includes(budget.status))
     .reduce((total, budget) => total + Number(budget.total ?? 0), 0);
+  const firstName = (profile.full_name || "Muromío").split(" ")[0];
+  const today = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 
   return (
     <WorkspaceShell
       section="/panel"
       userName={profile.full_name || profile.email || "Muromío"}
       role={profile.role}
+      credits={profile.unlimited_credits ? null : profile.credit_balance}
     >
       <WorkspaceHeader
-        eyebrow="Muromío / Dirección"
-        title="El pulso del despacho."
-        description="Proyectos, decisiones, clientes y rentabilidad en una sola mirada."
+        eyebrow={today}
+        title={`Buenos días, ${firstName}.`}
+        description={`Hoy hay ${pendingApprovals} aprobaciones esperando respuesta y ${pendingTasks} tareas abiertas en el despacho.`}
         actions={
           <>
             {profile.role === "admin" ? <Link href="/panel/solicitudes" className="button-secondary">Accesos</Link> : null}
@@ -122,13 +130,13 @@ export default async function PanelPage() {
           <p className="muted">Expedientes con información, preferencias y proyectos relacionados.</p>
           <Link href="/panel/clientes" className="text-link">Abrir directorio →</Link>
         </article>
-        <article className="workspace-card">
+        <article className="workspace-card workspace-card-dark">
           <div className="workspace-card-head"><div><small>Render Lab</small><h2>Inteligencia visual</h2></div></div>
           <strong className="large-number">{profile.unlimited_credits ? "∞" : profile.credit_balance ?? 0}</strong>
           <p className="muted">Créditos disponibles para generación y edición bajo marca Muromío.</p>
           <Link href="/panel/nuevo-render" className="text-link">Crear propuesta →</Link>
         </article>
-        <article className="workspace-card workspace-card-dark">
+        <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Actividad</small><h2>Lo último</h2></div></div>
           {(activity ?? []).slice(0, 3).map((event) => (
             <p key={event.id} className="activity-brief">{event.summary}<small>{shortDate(event.created_at)}</small></p>

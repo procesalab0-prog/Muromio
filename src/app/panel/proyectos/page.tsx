@@ -6,23 +6,25 @@ import { money, requireWorkspace, shortDate } from "@/lib/workspace";
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ nuevo?: string; error?: string }>;
+  searchParams: Promise<{ nuevo?: string; error?: string; q?: string }>;
 }) {
-  const { nuevo, error } = await searchParams;
+  const { nuevo, error, q } = await searchParams;
   const { supabase, profile } = await requireWorkspace();
+  let projectsQuery = supabase
+    .from("projects")
+    .select("id,name,description,status,stage,location,project_type,target_budget,due_date,client:clients(name),tasks(id,status),approvals(id,status),renders(id,status)")
+    .order("updated_at", { ascending: false });
+  if (q?.trim()) projectsQuery = projectsQuery.ilike("name", `%${q.trim().slice(0, 80)}%`);
   const [{ data: projects }, { data: clients }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id,name,description,status,stage,location,project_type,target_budget,due_date,client:clients(name),tasks(id,status),approvals(id,status),renders(id,status)")
-      .order("updated_at", { ascending: false }),
+    projectsQuery,
     supabase.from("clients").select("id,name").in("status", ["lead", "active"]).order("name"),
   ]);
 
   return (
-    <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+    <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <WorkspaceHeader
-        eyebrow="Portafolio operativo"
-        title="Proyectos con contexto."
+        eyebrow={q ? "Resultados de búsqueda" : "Portafolio operativo"}
+        title={q ? `Proyectos para “${q}”` : "Proyectos con contexto."}
         description="Del brief a la entrega, cada versión y decisión queda conectada."
         actions={<Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link>}
       />
