@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createProject } from "@/app/panel/actions";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { ExternalLinkIcon } from "@/components/os-icons";
 import { money, requireWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function ProjectsPage({
@@ -72,7 +73,7 @@ export default async function ProjectsPage({
                 <div><dt>Aprobaciones</dt><dd>{decisions}</dd></div>
                 <div><dt>Entrega</dt><dd>{project.due_date ? shortDate(project.due_date) : "Abierta"}</dd></div>
               </dl>
-              <footer><span>{money(project.target_budget)}</span><b>Abrir proyecto ↗</b></footer>
+              <footer><span>{money(project.target_budget)}</span><b>Abrir proyecto <ExternalLinkIcon width={11} height={11} /></b></footer>
             </Link>
           );
         })}

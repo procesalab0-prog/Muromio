@@ -782,7 +782,7 @@ img {
 .before-after > img, .before-after-top, .before-after-top img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .before-after-top { z-index: 1; }
 .before-after-line { position: absolute; z-index: 2; top: 0; bottom: 0; width: 1px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
-.before-after-line::after { content: "↔"; position: absolute; top: 50%; left: 50%; display: grid; width: 38px; height: 38px; place-items: center; transform: translate(-50%,-50%); border-radius: 50%; background: #f8f2e9; color: #4b4039; }
+.before-after-line::after { content: ""; position: absolute; top: 50%; left: 50%; width: 38px; height: 38px; transform: translate(-50%,-50%); border-radius: 50%; background: #f8f2e9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b4039' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 8 4 12l4 4M16 8l4 4-4 4'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .before-after label { position: absolute; z-index: 3; inset: 0; display: flex; justify-content: space-between; align-items: start; padding: 16px; color: #fff; font-size: 8px; letter-spacing: .12em; text-transform: uppercase; pointer-events: none; }
 .before-after input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; pointer-events: auto; }
 .comparison-empty { display: grid; min-height: 360px; place-content: center; padding: 40px; text-align: center; background: #ded2c5; }
@@ -944,6 +944,9 @@ img {
   position: sticky;
   z-index: 80;
   top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   width: 278px;
   height: 100svh;
   flex: 0 0 auto;
@@ -978,7 +981,8 @@ img {
 
 .os-collapse,
 .os-menu,
-.os-mobile-close {
+.os-mobile-close,
+.os-search-toggle {
   display: inline-grid;
   width: 29px;
   height: 29px;
@@ -992,6 +996,7 @@ img {
 
 .os-menu { display: none; width: 38px; height: 38px; }
 .os-mobile-close { display: none; }
+.os-search-toggle { display: none; width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; }
 
 .os-nav {
   display: block;
@@ -1377,6 +1382,8 @@ img {
   .workspace-os { display: flex; }
   .workspace-os .os-sidebar {
     position: fixed;
+    flex-direction: column;
+    align-items: stretch;
     width: min(86vw, 320px);
     height: 100svh;
     transform: translateX(-100%);
@@ -1386,11 +1393,11 @@ img {
   .workspace-os .os-sidebar .os-brand-full { display: inline; }
   .workspace-os .os-sidebar .os-brand-mark { display: none; }
   .workspace-os .os-sidebar .os-brand-row { justify-content: space-between; padding-inline: 20px; }
-  .workspace-os .os-sidebar .os-nav-label,
+  .workspace-os .os-sidebar .os-nav-label { display: block; }
   .workspace-os .os-sidebar .os-nav-item b,
-  .workspace-os .os-sidebar .os-nav-item em,
-  .workspace-os .os-sidebar .os-profile div,
-  .workspace-os .os-sidebar .os-profile form { display: initial; }
+  .workspace-os .os-sidebar .os-nav-item em { display: inline; }
+  .workspace-os .os-sidebar .os-profile div { display: grid; }
+  .workspace-os .os-sidebar .os-profile form { display: block; }
   .workspace-os .os-sidebar .os-nav .os-nav-item { justify-content: flex-start; }
   .workspace-os .os-sidebar .os-profile { display: grid; grid-template-columns: auto 1fr auto auto; }
   .workspace-os .os-sidebar .os-profile .os-tour-launch { display: grid; }
@@ -1398,7 +1405,21 @@ img {
   .os-mobile-close { display: inline-grid; font-size: 18px; }
   .os-scrim { position: fixed; z-index: 70; inset: 0; display: block; border: 0; background: rgba(30,25,22,.4); opacity: 0; pointer-events: none; transition: opacity .25s; }
   .os-scrim.is-visible { opacity: 1; pointer-events: auto; }
-  .os-search, .os-credits { display: none; }
+  .os-search { display: none; }
+  .os-search.is-mobile-open {
+    position: fixed;
+    z-index: 60;
+    top: 64px;
+    right: 12px;
+    left: 12px;
+    display: flex;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    box-shadow: 0 14px 34px -18px rgba(20,16,14,.4);
+  }
+  .os-search-toggle { display: inline-grid; }
+  .os-credits small { display: none; }
   .os-topbar { min-height: 64px; }
   .os-title { min-width: 0; }
   .os-title strong { font-size: 21px; }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { WorkspaceTour } from "./workspace-tour";
+import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, MenuIcon, SearchIcon, SignOutIcon, SparkleIcon } from "./os-icons";
 
 const navigation = [
   {
@@ -61,6 +62,7 @@ export function WorkspaceChrome({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [crumb, title] = sectionTitles[section] ?? ["Muromío Studio OS", "Proyecto"];
   const roleNavigation = role === "client"
     ? navigation
@@ -80,9 +82,9 @@ export function WorkspaceChrome({
             <span className="os-brand-mark" aria-hidden="true">M</span>
           </Link>
           <button className="os-collapse" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expandir menú" : "Colapsar menú"} aria-expanded={!collapsed}>
-            {collapsed ? "›" : "‹"}
+            {collapsed ? <ChevronRightIcon width={15} height={15} /> : <ChevronLeftIcon width={15} height={15} />}
           </button>
-          <button className="os-mobile-close" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú">×</button>
+          <button className="os-mobile-close" onClick={() => setMobileOpen(false)} aria-label="Cerrar menú"><CloseIcon width={17} height={17} /></button>
         </div>
         <nav className="workspace-nav os-nav" aria-label="Navegación del despacho" data-tour="navigation">
           {groups.map((group) => (
@@ -114,7 +116,7 @@ export function WorkspaceChrome({
             <small>{role === "admin" ? "Administrador" : role === "client" ? "Cliente" : "Staff Muromío"}</small>
           </div>
           <form action="/auth/signout" method="post">
-            <button type="submit" aria-label="Cerrar sesión">↗</button>
+            <button type="submit" aria-label="Cerrar sesión"><SignOutIcon width={16} height={16} /></button>
           </form>
           <button type="button" className="os-tour-launch" aria-label="Ver tutorial" title="Ver tutorial" onClick={() => window.dispatchEvent(new Event("muromio:tour"))}>?</button>
         </div>
@@ -122,17 +124,31 @@ export function WorkspaceChrome({
       <button className={`os-scrim ${mobileOpen ? "is-visible" : ""}`} aria-label="Cerrar menú" onClick={() => setMobileOpen(false)} />
       <div className="os-stage">
         <header className="os-topbar">
-          <button className="os-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" aria-expanded={mobileOpen}>☰</button>
+          <button className="os-menu" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" aria-expanded={mobileOpen}><MenuIcon width={20} height={20} /></button>
           <div className="os-title">
             <small>{crumb}</small>
             <strong>{title}</strong>
           </div>
-          <form className="os-search" action="/panel/proyectos" data-tour="search">
-            <span>⌕</span>
-            <input name="q" placeholder="Buscar proyectos…" aria-label="Buscar proyectos" />
+          <form className={`os-search ${mobileSearchOpen ? "is-mobile-open" : ""}`} action="/panel/proyectos" data-tour="search">
+            <span><SearchIcon width={15} height={15} /></span>
+            <input name="q" placeholder="Buscar proyectos…" aria-label="Buscar proyectos" autoFocus={mobileSearchOpen} />
           </form>
           <div className="os-top-actions">
-            {credits !== undefined ? <span className="os-credits" data-tour="credits"><i>✦</i>{credits === null ? "∞" : Number(credits).toLocaleString("es-MX")} <small>créditos</small></span> : null}
+            <button
+              type="button"
+              className="os-search-toggle"
+              onClick={() => setMobileSearchOpen((value) => !value)}
+              aria-label={mobileSearchOpen ? "Cerrar búsqueda" : "Buscar proyectos"}
+              aria-expanded={mobileSearchOpen}
+            >
+              {mobileSearchOpen ? <CloseIcon width={17} height={17} /> : <SearchIcon width={17} height={17} />}
+            </button>
+            {credits !== undefined ? (
+              <span className="os-credits" data-tour="credits">
+                <i><SparkleIcon width={13} height={13} /></i>
+                {credits === null ? "∞" : Number(credits).toLocaleString("es-MX")} <small>créditos</small>
+              </span>
+            ) : null}
             {role !== "client" ? <Link href="/panel/nuevo-render" className="os-new-render">+ Nuevo render</Link> : null}
           </div>
         </header>

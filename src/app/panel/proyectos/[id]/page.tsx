@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, removeProjectMember, requestApproval, updateProject, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
 import { BeforeAfter } from "@/components/before-after";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { ArrowRightIcon, ExternalLinkIcon } from "@/components/os-icons";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function ProjectDetailPage({
@@ -80,7 +81,7 @@ export default async function ProjectDetailPage({
         eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
         title={project.name}
         description={project.description || "Expediente central del proyecto."}
-        actions={canEdit ? <><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir ↗</a></> : undefined}
+        actions={canEdit ? <><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir <ExternalLinkIcon width={12} height={12} /></a></> : undefined}
       />
 
       <section className="project-overview">
@@ -187,7 +188,7 @@ export default async function ProjectDetailPage({
           <div className="workspace-card-head"><div><small>Historial creativo</small><h2>Versiones</h2></div><span>{(versions ?? []).length}</span></div>
           {(versions ?? []).slice(0, 4).map((version) => <div className="version-row" key={version.id}><b>V{version.version_number}</b><div><strong>{version.title}</strong><small>{version.status} · {shortDate(version.created_at)}</small></div></div>)}
           {!(versions ?? []).length ? <p className="muted">{renders?.length ?? 0} renders existentes. La próxima generación podrá convertirse en versión formal.</p> : null}
-          {canEdit ? <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual →</Link> : null}
+          {canEdit ? <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual <ArrowRightIcon width={11} height={11} /></Link> : null}
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Finanzas</small><h2>Presupuestos</h2></div><span>{(budgets ?? []).length}</span></div>
@@ -224,7 +225,7 @@ export default async function ProjectDetailPage({
             <div className="form-pair"><select name="category" defaultValue="other"><option value="plan">Plano</option><option value="reference">Referencia</option><option value="contract">Contrato</option><option value="budget">Presupuesto</option><option value="delivery">Entrega</option><option value="other">Otro</option></select><label className="checkbox-label"><input name="is_client_visible" type="checkbox" /> Visible al cliente</label></div>
             <button className="button-secondary" type="submit">Subir archivo</button>
           </form> : null}
-          {fileLinks.map((file) => file.signedUrl ? <a className="tool-result" href={file.signedUrl} target="_blank" rel="noreferrer" key={file.id}><span>{file.name}</span><small>{fileCategory(file.category)} ↗</small></a> : null)}
+          {fileLinks.map((file) => file.signedUrl ? <a className="tool-result" href={file.signedUrl} target="_blank" rel="noreferrer" key={file.id}><span>{file.name}</span><small>{fileCategory(file.category)} <ExternalLinkIcon width={10} height={10} /></small></a> : null)}
         </article>
       </section>
 
@@ -234,7 +235,7 @@ export default async function ProjectDetailPage({
           {renderUrls[0] && renderUrls[1] ? (
             <BeforeAfter before={renderUrls[1]} after={renderUrls[0]} beforeLabel="Versión anterior" afterLabel="Versión actual" />
           ) : (
-            <div className="comparison-empty"><strong>Dos versiones desbloquean el comparador.</strong><p>Genera una variación para presentar la evolución visual con un deslizador.</p><Link href="/panel/nuevo-render">Crear otra versión →</Link></div>
+            <div className="comparison-empty"><strong>Dos versiones desbloquean el comparador.</strong><p>Genera una variación para presentar la evolución visual con un deslizador.</p><Link href="/panel/nuevo-render">Crear otra versión <ArrowRightIcon width={11} height={11} /></Link></div>
           )}
         </article>
         <article className="workspace-card presentation-tools" id="presentar">
@@ -247,7 +248,7 @@ export default async function ProjectDetailPage({
               <label className="checkbox-label"><input name="allow_download" type="checkbox" /> Permitir descargas</label>
               <button className="button-secondary" type="submit">Crear enlace</button>
             </form> : null}
-            {(shareLinks ?? []).slice(0, 2).map((link) => <p className="tool-result" key={link.id}><span>{link.label}</span><Link href={`/presentacion/${link.token}`} target="_blank">Abrir ↗</Link></p>)}
+            {(shareLinks ?? []).slice(0, 2).map((link) => <p className="tool-result" key={link.id}><span>{link.label}</span><Link href={`/presentacion/${link.token}`} target="_blank">Abrir <ExternalLinkIcon width={10} height={10} /></Link></p>)}
           </details>
           <details>
             <summary>Video de presentación <span className="coming-badge">Próximamente</span></summary>
@@ -261,7 +262,7 @@ export default async function ProjectDetailPage({
               <input name="title" placeholder="Título personalizado (opcional)" />
               <button className="button-secondary" type="submit">Crear documento</button>
             </form> : null}
-            {(documents ?? []).slice(0, 3).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><Link href={`/panel/proyectos/${id}/documentos/${document.id}`} target="_blank">Abrir ↗</Link></p>)}
+            {(documents ?? []).slice(0, 3).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><Link href={`/panel/proyectos/${id}/documentos/${document.id}`} target="_blank">Abrir <ExternalLinkIcon width={10} height={10} /></Link></p>)}
           </details>
         </article>
       </section>

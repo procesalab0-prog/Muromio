@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ArrowLeftIcon } from "@/components/os-icons";
 import { InpaintEditor } from "./inpaint-editor";
 
 export default async function EditRenderPage({
@@ -45,8 +46,8 @@ export default async function EditRenderPage({
 
   return (
     <main style={{ minHeight: "100svh", padding: "clamp(24px,4vw,64px)", background: "var(--sand)" }}>
-      <Link href="/panel" style={{ color: "var(--rust)", textDecoration: "none", fontSize: 13 }}>
-        ← Volver a proyectos
+      <Link href="/panel" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--rust)", textDecoration: "none", fontSize: 13 }}>
+        <ArrowLeftIcon width={13} height={13} /> Volver a proyectos
       </Link>
       <h1 style={{ margin: "22px 0 8px", fontFamily: "var(--font-lora)", fontSize: "clamp(36px,6vw,60px)", fontWeight: 500 }}>
         Editar render

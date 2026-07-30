@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { ArrowRightIcon, ExternalLinkIcon } from "@/components/os-icons";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function PanelPage() {
@@ -94,7 +95,7 @@ export default async function PanelPage() {
         <article className="workspace-card workspace-card-wide">
           <div className="workspace-card-head">
             <div><small>Portafolio activo</small><h2>Proyectos en movimiento</h2></div>
-            <Link href="/panel/proyectos">Ver todos ↗</Link>
+            <Link href="/panel/proyectos">Ver todos <ExternalLinkIcon width={12} height={12} /></Link>
           </div>
           <div className="project-list">
             {(projects ?? []).length ? (projects ?? []).slice(0, 6).map((project) => (
@@ -106,7 +107,7 @@ export default async function PanelPage() {
                 </div>
                 <span className="project-stage">{stageLabel(project.stage)}</span>
                 <span>{project.due_date ? shortDate(project.due_date) : "Sin entrega"}</span>
-                <b>↗</b>
+                <b><ExternalLinkIcon width={13} height={13} /></b>
               </Link>
             )) : (
               <div className="workspace-empty">
@@ -165,13 +166,13 @@ export default async function PanelPage() {
           <div className="workspace-card-head"><div><small>Clientes</small><h2>Relaciones activas</h2></div></div>
           <strong className="large-number">{clients?.length ?? 0}</strong>
           <p className="muted">Expedientes con información, preferencias y proyectos relacionados.</p>
-          <Link href="/panel/clientes" className="text-link">Abrir directorio →</Link>
+          <Link href="/panel/clientes" className="text-link">Abrir directorio <ArrowRightIcon width={11} height={11} /></Link>
         </article>
         <article className="workspace-card workspace-card-dark">
           <div className="workspace-card-head"><div><small>Render Lab</small><h2>Inteligencia visual</h2></div></div>
           <strong className="large-number">{profile.unlimited_credits ? "∞" : profile.credit_balance ?? 0}</strong>
           <p className="muted">Créditos disponibles para generación y edición bajo marca Muromío.</p>
-          <Link href="/panel/nuevo-render" className="text-link">Crear propuesta →</Link>
+          <Link href="/panel/nuevo-render" className="text-link">Crear propuesta <ArrowRightIcon width={11} height={11} /></Link>
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Actividad</small><h2>Lo último</h2></div></div>

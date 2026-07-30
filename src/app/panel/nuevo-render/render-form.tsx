@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { SparkleIcon } from "@/components/os-icons";
 
 const styles = [
   "Minimalismo cálido",
@@ -168,7 +169,7 @@ export function RenderForm({
             </div>
           </>
         ) : (
-          <div className="render-os-empty"><span>✦</span><strong>{pending ? "Construyendo propuesta…" : "Lienzo de trabajo"}</strong><p>{pending ? message : "Tu render aparecerá aquí al terminar la generación."}</p></div>
+          <div className="render-os-empty"><span><SparkleIcon width={26} height={26} /></span><strong>{pending ? "Construyendo propuesta…" : "Lienzo de trabajo"}</strong><p>{pending ? message : "Tu render aparecerá aquí al terminar la generación."}</p></div>
         )}
       </div>
     </div>

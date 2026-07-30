@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, type TouchEvent } from "react";
 import { makeTranslate, type Lang } from "@/lib/lang";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/os-icons";
 
 const projects = [
   { name: "Casa ER", esType: "Acabados y decoración · Residencial", enType: "Finishes & styling · Residential", es: "Intervención de acabados y decoración. Disfrutamos el desarrollo de este proyecto en compañía del cliente.", en: "A finishes and styling intervention developed closely alongside the client.", images: ["IMG_5478.jpg", "IMG_5479.jpg"] },
@@ -43,8 +44,8 @@ function ProjectCarousel({ project, index, lang }: { project: (typeof projects)[
           style={{ objectFit: "cover", opacity: imageIndex === active ? 1 : 0, transition: "opacity .7s ease", animation: imageIndex === active ? "kenburns 9s ease-out forwards" : "none" }}
         />
       ))}
-      <button onClick={() => change(-1)} aria-label="Anterior" style={arrowStyle}>‹</button>
-      <button onClick={() => change(1)} aria-label="Siguiente" style={{ ...arrowStyle, left: 72 }}>›</button>
+      <button onClick={() => change(-1)} aria-label="Anterior" style={arrowStyle}><ChevronLeftIcon width={16} height={16} /></button>
+      <button onClick={() => change(1)} aria-label="Siguiente" style={{ ...arrowStyle, left: 72 }}><ChevronRightIcon width={16} height={16} /></button>
       <div style={{ position: "absolute", right: 20, bottom: 28, color: "#F6F1E9", fontSize: 12, letterSpacing: ".18em" }}>
         {String(active + 1).padStart(2, "0")} / {String(project.images.length).padStart(2, "0")}
       </div>
@@ -80,5 +81,5 @@ export function SelectedProjects({ lang }: { lang: Lang }) {
 }
 
 const arrowStyle = {
-  position: "absolute", left: 18, bottom: 18, zIndex: 2, width: 46, height: 46, borderRadius: "50%", border: "1px solid rgba(246,241,233,.5)", background: "rgba(33,28,25,.4)", color: "#F6F1E9", fontSize: 19, cursor: "pointer", backdropFilter: "blur(4px)",
+  position: "absolute", left: 18, bottom: 18, zIndex: 2, display: "flex", alignItems: "center", justifyContent: "center", width: 46, height: 46, borderRadius: "50%", border: "1px solid rgba(246,241,233,.5)", background: "rgba(33,28,25,.4)", color: "#F6F1E9", cursor: "pointer", backdropFilter: "blur(4px)",
 } as const;
