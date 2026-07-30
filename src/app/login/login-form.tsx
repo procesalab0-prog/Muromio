@@ -59,50 +59,45 @@ export function LoginForm({ initialMode = "login" }: { initialMode?: "login" | "
   }
 
   return (
-    <form onSubmit={handleSubmit} style={formStyle}>
-      <p style={{ margin: "0 0 12px", color: "var(--rust)", fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase" }}>
-        {mode === "login" ? "Espacio de trabajo" : "Solicitud de acceso"}
+    <form onSubmit={handleSubmit} className="os-login-form">
+      <p className="os-login-eyebrow">
+        {mode === "login" ? "Bienvenida de vuelta" : "Acceso a Muromío OS"}
       </p>
-      <h1 style={{ margin: "0 0 10px", fontFamily: "var(--font-lora)", fontSize: "clamp(34px,5vw,48px)", fontWeight: 500, lineHeight: 1.05 }}>
-        {mode === "login" ? "Bienvenido a Muromío" : "Crear una cuenta"}
+      <h1>
+        {mode === "login" ? "Iniciar sesión" : "Solicitar acceso"}
       </h1>
-      <p style={{ margin: "0 0 28px", color: "#655d58", lineHeight: 1.6 }}>
+      <p className="os-login-intro">
         {mode === "login"
-          ? "Accede a tus proyectos, referencias y renders."
-          : "Déjanos tus datos. Revisaremos tu solicitud antes de habilitar la prueba."}
+          ? "Accede al sistema del despacho."
+          : "Crea tu cuenta. Dirección revisará tu solicitud."}
       </p>
 
       {mode === "register" ? <>
-        <label style={labelStyle}>Nombre completo
-          <input name="fullName" autoComplete="name" required maxLength={120} style={fieldStyle} />
+        <label>Nombre completo
+          <input name="fullName" autoComplete="name" required maxLength={120} />
         </label>
-        <label style={labelStyle}>Número de teléfono
-          <input name="phone" type="tel" autoComplete="tel" required maxLength={30} style={fieldStyle} placeholder="+52 477 000 0000" />
+        <label>Teléfono
+          <input name="phone" type="tel" autoComplete="tel" required maxLength={30} placeholder="+52 477 000 0000" />
         </label>
       </> : null}
-      <label style={labelStyle}>Correo electrónico
-        <input name="email" type="email" autoComplete="email" required style={fieldStyle} />
+      <label>Correo
+        <input name="email" type="email" autoComplete="email" required placeholder="nombre@correo.com" />
       </label>
-      <label style={labelStyle}>Contraseña
-        <input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} style={fieldStyle} />
+      <label>Contraseña
+        <input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} placeholder="••••••••" />
       </label>
-      <button type="submit" disabled={pending} style={{ ...primaryButtonStyle, opacity: pending ? .7 : 1 }}>
-        {pending ? "Procesando…" : mode === "login" ? "Iniciar sesión" : "Enviar solicitud"}
+      <button type="submit" disabled={pending} className="os-login-primary">
+        {pending ? "Procesando…" : mode === "login" ? "Entrar a Muromío OS" : "Enviar solicitud"}
       </button>
+      <div className="os-login-divider"><span>o</span></div>
       <button
         type="button"
         onClick={() => { setMode(mode === "login" ? "register" : "login"); setMessage(""); }}
-        style={switchButtonStyle}
+        className="os-login-switch"
       >
-        {mode === "login" ? "¿No tienes cuenta? Solicitar acceso" : "Ya tengo cuenta"}
+        {mode === "login" ? "Solicitar acceso" : "Ya tengo una cuenta"}
       </button>
-      {message ? <p role="alert" style={{ margin: "18px 0 0", color: "var(--rust-dark)", fontSize: 13, lineHeight: 1.5 }}>{message}</p> : null}
+      {message ? <p role="alert" className="os-login-message">{message}</p> : null}
     </form>
   );
 }
-
-const formStyle = { width: "100%", maxWidth: 470, padding: "clamp(28px,5vw,52px)", background: "var(--cream)", border: "1px solid rgba(38,34,32,.12)" } as const;
-const labelStyle = { display: "grid", gap: 8, marginBottom: 16, fontSize: 13 } as const;
-const fieldStyle = { minHeight: 48, padding: "0 14px", border: "1px solid rgba(38,34,32,.25)", background: "#fffdf8", color: "var(--ink)", font: "inherit" } as const;
-const primaryButtonStyle = { width: "100%", minHeight: 50, border: 0, background: "var(--rust)", color: "var(--cream)", cursor: "pointer", font: "inherit", fontSize: 12, letterSpacing: ".16em", textTransform: "uppercase" } as const;
-const switchButtonStyle = { width: "100%", marginTop: 12, padding: 10, border: 0, background: "transparent", color: "var(--rust)", cursor: "pointer", font: "inherit", fontSize: 13 } as const;
