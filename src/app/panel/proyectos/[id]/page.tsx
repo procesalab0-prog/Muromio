@@ -1,0 +1,211 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { createBudget, createComment, createProjectDocument, createShareLink, createTask, queueProjectVideo, requestApproval } from "@/app/panel/actions";
+import { BeforeAfter } from "@/components/before-after";
+import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
+
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { supabase, profile } = await requireWorkspace();
+  const [
+    { data: project },
+    { data: phases },
+    { data: tasks },
+    { data: versions },
+    { data: approvals },
+    { data: comments },
+    { data: budgets },
+    { data: files },
+    { data: renders },
+    { data: videos },
+    { data: documents },
+    { data: shareLinks },
+  ] = await Promise.all([
+    supabase.from("projects").select("*,client:clients(*)").eq("id", id).single(),
+    supabase.from("project_phases").select("*").eq("project_id", id).order("sort_order"),
+    supabase.from("tasks").select("*,assignee:profiles(full_name)").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("project_versions").select("*").eq("project_id", id).order("version_number", { ascending: false }),
+    supabase.from("approvals").select("*").eq("project_id", id).order("requested_at", { ascending: false }),
+    supabase.from("project_comments").select("*").eq("project_id", id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("budgets").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("project_files").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("renders").select("id,status,output_path,created_at").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("project_videos").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("generated_documents").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("share_links").select("*").eq("project_id", id).is("revoked_at", null).order("created_at", { ascending: false }),
+  ]);
+
+  if (!project) notFound();
+  const taskAction = createTask.bind(null, id);
+  const budgetAction = createBudget.bind(null, id);
+  const commentAction = createComment.bind(null, id);
+  const approvalAction = requestApproval.bind(null, id);
+  const shareAction = createShareLink.bind(null, id);
+  const videoAction = queueProjectVideo.bind(null, id);
+  const documentAction = createProjectDocument.bind(null, id);
+  const approvedPhases = (phases ?? []).filter((phase) => ["approved", "completed"].includes(phase.status)).length;
+  const progress = phases?.length ? Math.round((approvedPhases / phases.length) * 100) : 0;
+  const renderUrls = await Promise.all(
+    (renders ?? [])
+      .filter((render) => render.status === "completed" && render.output_path)
+      .slice(0, 2)
+      .map(async (render) => {
+        const { data } = await supabase.storage.from("render-assets").createSignedUrl(render.output_path!, 60 * 60);
+        return data?.signedUrl || null;
+      }),
+  );
+
+  return (
+    <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
+      <WorkspaceHeader
+        eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
+        title={project.name}
+        description={project.description || "Expediente central del proyecto."}
+        actions={<><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><button className="button-secondary">Compartir ↗</button></>}
+      />
+
+      <section className="project-overview">
+        <article className="project-progress">
+          <div><span>Avance general</span><strong>{progress}%</strong></div>
+          <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
+          <div className="phase-track">
+            {(phases ?? []).map((phase) => <span key={phase.id} className={`phase-${phase.status}`}>{phase.name}<small>{phase.status}</small></span>)}
+          </div>
+        </article>
+        <article className="project-facts">
+          <div><span>Cliente</span><strong>{relationOne(project.client)?.name || "Proyecto interno"}</strong></div>
+          <div><span>Presupuesto objetivo</span><strong>{money(project.target_budget)}</strong></div>
+          <div><span>Entrega</span><strong>{shortDate(project.due_date)}</strong></div>
+          <div><span>Superficie</span><strong>{project.area_m2 ? `${project.area_m2} m²` : "Por definir"}</strong></div>
+        </article>
+      </section>
+
+      <section className="project-command-grid">
+        <article className="workspace-card project-command-main">
+          <div className="workspace-card-head"><div><small>Control de producción</small><h2>Tareas y entregables</h2></div><span>{(tasks ?? []).filter((task) => task.status !== "done").length} abiertas</span></div>
+          <form action={taskAction} className="quick-add">
+            <input name="title" required placeholder="Agregar una tarea al proyecto…" />
+            <select name="priority" defaultValue="normal"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select>
+            <input name="due_at" type="date" />
+            <button type="submit">Agregar</button>
+          </form>
+          <div className="task-board">
+            {["todo", "in_progress", "review", "done"].map((status) => (
+              <div key={status}>
+                <h3>{taskStatus(status)} <span>{(tasks ?? []).filter((task) => task.status === status).length}</span></h3>
+                {(tasks ?? []).filter((task) => task.status === status).map((task) => (
+                  <article key={task.id}><i className={`priority-${task.priority}`} /><strong>{task.title}</strong><p>{task.description || "Sin notas adicionales"}</p><small>{task.due_at ? shortDate(task.due_at) : "Sin fecha"}</small></article>
+                ))}
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <aside className="project-command-side">
+          <article className="workspace-card">
+            <div className="workspace-card-head"><div><small>Cliente</small><h2>Aprobaciones</h2></div><span>{(approvals ?? []).filter((item) => item.status === "pending").length}</span></div>
+            <form action={approvalAction} className="workspace-form compact-form">
+              <input name="reviewer_name" placeholder="Nombre del cliente" defaultValue={relationOne(project.client)?.name || ""} />
+              <input name="reviewer_email" type="email" placeholder="Correo para revisión" defaultValue={relationOne(project.client)?.email || ""} />
+              <select name="version_id" defaultValue=""><option value="">Proyecto general</option>{(versions ?? []).map((version) => <option key={version.id} value={version.id}>V{version.version_number} · {version.title}</option>)}</select>
+              <textarea name="message" rows={2} placeholder="Mensaje de presentación…" />
+              <button className="button-primary" type="submit">Solicitar aprobación</button>
+            </form>
+            <div className="approval-list">{(approvals ?? []).slice(0, 4).map((item) => <p key={item.id}><span className={`approval-${item.status}`} />{item.reviewer_name || "Cliente"}<small>{approvalStatus(item.status)}</small></p>)}</div>
+          </article>
+          <article className="workspace-card">
+            <div className="workspace-card-head"><div><small>Conversación</small><h2>Bitácora</h2></div></div>
+            <form action={commentAction} className="workspace-form compact-form">
+              <textarea name="body" required rows={3} placeholder="Registrar una decisión o comentario…" />
+              <div className="form-pair"><select name="visibility" defaultValue="team"><option value="team">Solo equipo</option><option value="client">Visible al cliente</option></select><button className="button-secondary" type="submit">Publicar</button></div>
+            </form>
+            <div className="comment-list">{(comments ?? []).slice(0, 5).map((comment) => <article key={comment.id}><strong>{comment.author_name || "Muromío"}</strong><small>{comment.visibility === "client" ? "Cliente" : "Interno"} · {shortDate(comment.created_at)}</small><p>{comment.body}</p></article>)}</div>
+          </article>
+        </aside>
+      </section>
+
+      <section className="workspace-grid workspace-grid-thirds project-lower-grid">
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Historial creativo</small><h2>Versiones</h2></div><span>{(versions ?? []).length}</span></div>
+          {(versions ?? []).slice(0, 4).map((version) => <div className="version-row" key={version.id}><b>V{version.version_number}</b><div><strong>{version.title}</strong><small>{version.status} · {shortDate(version.created_at)}</small></div></div>)}
+          {!(versions ?? []).length ? <p className="muted">{renders?.length ?? 0} renders existentes. La próxima generación podrá convertirse en versión formal.</p> : null}
+          <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual →</Link>
+        </article>
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Finanzas</small><h2>Presupuestos</h2></div><span>{(budgets ?? []).length}</span></div>
+          <form action={budgetAction} className="workspace-form compact-form">
+            <input name="title" required placeholder="Honorarios de diseño" />
+            <input name="subtotal" required type="number" min="0" placeholder="Subtotal antes de IVA" />
+            <input name="valid_until" type="date" />
+            <button className="button-primary" type="submit">Preparar presupuesto</button>
+          </form>
+          {(budgets ?? []).slice(0, 3).map((budget) => <div className="budget-row" key={budget.id}><div><strong>{budget.number}</strong><small>{budget.title}</small></div><span>{money(budget.total)}</span></div>)}
+        </article>
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Centro de archivos</small><h2>Entregables</h2></div><span>{(files ?? []).length}</span></div>
+          <div className="file-category-grid">
+            {["plan", "render", "budget", "contract", "video", "delivery"].map((category) => <div key={category}><strong>{(files ?? []).filter((file) => file.category === category).length}</strong><span>{fileCategory(category)}</span></div>)}
+          </div>
+          <p className="muted">Planos, contratos, videos y documentos quedarán organizados por proyecto.</p>
+        </article>
+      </section>
+
+      <section className="project-presentation-grid">
+        <article className="workspace-card presentation-compare">
+          <div className="workspace-card-head"><div><small>Presentación interactiva</small><h2>Antes / después</h2></div></div>
+          {renderUrls[0] && renderUrls[1] ? (
+            <BeforeAfter before={renderUrls[1]} after={renderUrls[0]} beforeLabel="Versión anterior" afterLabel="Versión actual" />
+          ) : (
+            <div className="comparison-empty"><strong>Dos versiones desbloquean el comparador.</strong><p>Genera una variación para presentar la evolución visual con un deslizador.</p><Link href="/panel/nuevo-render">Crear otra versión →</Link></div>
+          )}
+        </article>
+        <article className="workspace-card presentation-tools">
+          <div className="workspace-card-head"><div><small>Marca blanca</small><h2>Presentar y entregar</h2></div></div>
+          <details open>
+            <summary>Enlace privado <span>{shareLinks?.length ?? 0}</span></summary>
+            <form action={shareAction} className="workspace-form compact-form">
+              <input name="label" placeholder="Presentación de concepto" />
+              <div className="form-pair"><input name="expires_at" type="date" /><select name="version_id" defaultValue=""><option value="">Proyecto completo</option>{(versions ?? []).map((version) => <option key={version.id} value={version.id}>V{version.version_number}</option>)}</select></div>
+              <label className="checkbox-label"><input name="allow_download" type="checkbox" /> Permitir descargas</label>
+              <button className="button-secondary" type="submit">Crear enlace</button>
+            </form>
+            {(shareLinks ?? []).slice(0, 2).map((link) => <p className="tool-result" key={link.id}><span>{link.label}</span><Link href={`/presentacion/${link.token}`} target="_blank">Abrir ↗</Link></p>)}
+          </details>
+          <details>
+            <summary>Video de presentación <span>{videos?.length ?? 0}</span></summary>
+            <form action={videoAction} className="workspace-form compact-form">
+              <input name="title" placeholder="Recorrido Casa Roble" />
+              <select name="format" defaultValue="landscape"><option value="landscape">Horizontal · presentación</option><option value="portrait">Vertical · redes</option><option value="square">Cuadrado</option></select>
+              <button className="button-secondary" type="submit">Preparar video</button>
+            </form>
+            {(videos ?? []).slice(0, 2).map((video) => <p className="tool-result" key={video.id}><span>{video.title}</span><small>{video.status}</small></p>)}
+          </details>
+          <details>
+            <summary>Documento Muromío <span>{documents?.length ?? 0}</span></summary>
+            <form action={documentAction} className="workspace-form compact-form">
+              <select name="document_type" defaultValue="proposal"><option value="proposal">Propuesta de diseño</option><option value="brief">Brief</option><option value="minutes">Minuta</option><option value="spec_sheet">Fichas técnicas</option><option value="weekly_report">Reporte semanal</option><option value="approval">Acta de aprobación</option><option value="delivery_manual">Manual de entrega</option></select>
+              <input name="title" placeholder="Título personalizado (opcional)" />
+              <button className="button-secondary" type="submit">Crear borrador</button>
+            </form>
+            {(documents ?? []).slice(0, 2).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><small>{document.status}</small></p>)}
+          </details>
+        </article>
+      </section>
+    </WorkspaceShell>
+  );
+}
+
+function taskStatus(status: string) {
+  return ({ todo: "Por hacer", in_progress: "En proceso", review: "Revisión", done: "Listo" } as Record<string, string>)[status] || status;
+}
+function approvalStatus(status: string) {
+  return ({ pending: "Pendiente", approved: "Aprobado", changes_requested: "Pide cambios", rejected: "Rechazado" } as Record<string, string>)[status] || status;
+}
+function fileCategory(category: string) {
+  return ({ plan: "Planos", render: "Renders", budget: "Presupuestos", contract: "Contratos", video: "Videos", delivery: "Entrega" } as Record<string, string>)[category] || category;
+}

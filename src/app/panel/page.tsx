@@ -1,187 +1,153 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-
-type RenderItem = {
-  id: string;
-  status: string;
-  output_path: string | null;
-  created_at: string;
-  signedUrl?: string;
-};
+import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function PanelPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, profile } = await requireWorkspace();
 
-  if (!user) {
-    redirect("/login");
-  }
+  const [
+    { data: projects },
+    { data: clients },
+    { data: tasks },
+    { data: budgets },
+    { data: approvals },
+    { data: activity },
+  ] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id,name,status,stage,due_date,target_budget,client:clients(name),renders(id,status)")
+      .neq("status", "archived")
+      .order("updated_at", { ascending: false })
+      .limit(6),
+    supabase.from("clients").select("id,status", { count: "exact" }).neq("status", "archived"),
+    supabase
+      .from("tasks")
+      .select("id,title,status,priority,due_at,project:projects(id,name)")
+      .neq("status", "done")
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .limit(6),
+    supabase.from("budgets").select("id,total,status,project:projects(name)").order("created_at", { ascending: false }),
+    supabase
+      .from("approvals")
+      .select("id,status,requested_at,project:projects(id,name)")
+      .eq("status", "pending")
+      .order("requested_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("activity_events")
+      .select("id,summary,created_at,project:projects(name)")
+      .order("created_at", { ascending: false })
+      .limit(7),
+  ]);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role,access_status,credit_balance,unlimited_credits,credits_spent,estimated_usd")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.access_status !== "approved") {
-    redirect("/solicitud-pendiente");
-  }
-
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("id,name,description,created_at,renders(id,status,output_path,created_at)")
-    .order("created_at", { ascending: false })
-    .limit(12);
-
-  const projectsWithUrls = await Promise.all(
-    (projects ?? []).map(async (project) => {
-      const renders = ((project.renders ?? []) as RenderItem[]).sort(
-        (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
-      );
-      const rendersWithUrls = await Promise.all(
-        renders.map(async (render) => {
-          if (render.status !== "completed" || !render.output_path) return render;
-          const { data } = await supabase.storage
-            .from("render-assets")
-            .createSignedUrl(render.output_path, 60 * 60);
-          return { ...render, signedUrl: data?.signedUrl };
-        }),
-      );
-      return { ...project, renders: rendersWithUrls };
-    }),
-  );
+  const activeProjects = (projects ?? []).filter((project) => project.status !== "completed").length;
+  const pendingTasks = (tasks ?? []).length;
+  const pendingApprovals = (approvals ?? []).length;
+  const pipeline = (budgets ?? [])
+    .filter((budget) => ["draft", "sent"].includes(budget.status))
+    .reduce((total, budget) => total + Number(budget.total ?? 0), 0);
 
   return (
-    <main style={{ minHeight: "100svh", padding: "clamp(28px,5vw,72px)", background: "var(--sand)" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", gap: 24, alignItems: "start" }}>
-        <div>
-          <p style={{ margin: "0 0 10px", color: "var(--rust)", fontSize: 11, letterSpacing: ".2em", textTransform: "uppercase" }}>
-            Muromío / espacio de trabajo
-          </p>
-          <h1 style={{ margin: 0, fontFamily: "var(--font-lora)", fontSize: "clamp(36px,6vw,64px)", fontWeight: 500 }}>
-            Tus proyectos
-          </h1>
-          <p style={{ color: "#655d58" }}>{user.email}</p>
-          <p style={{ margin: "8px 0 0", color: "var(--rust)", fontSize: 13 }}>
-            {profile.unlimited_credits ? "Créditos sin límite" : `${profile.credit_balance ?? 0} créditos disponibles`}
-            {profile.role === "admin" ? ` · ${profile.credits_spent ?? 0} usados · $${Number(profile.estimated_usd ?? 0).toFixed(2)} USD cobrados` : ""}
-          </p>
-        </div>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            style={{
-              padding: "10px 16px",
-              border: "1px solid rgba(38,34,32,.3)",
-              background: "transparent",
-              color: "var(--ink)",
-              cursor: "pointer",
-              font: "inherit",
-              fontSize: 12,
-            }}
-          >
-            Cerrar sesión
-          </button>
-        </form>
-      </header>
+    <WorkspaceShell
+      section="/panel"
+      userName={profile.full_name || profile.email || "Muromío"}
+      role={profile.role}
+    >
+      <WorkspaceHeader
+        eyebrow="Muromío / Dirección"
+        title="El pulso del despacho."
+        description="Proyectos, decisiones, clientes y rentabilidad en una sola mirada."
+        actions={
+          <>
+            {profile.role === "admin" ? <Link href="/panel/solicitudes" className="button-secondary">Accesos</Link> : null}
+            <Link href="/panel/proyectos?nuevo=1" className="button-primary">Nuevo proyecto</Link>
+          </>
+        }
+      />
 
-      <section style={{ marginTop: 64 }}>
-        {profile.role === "admin" ? (
-          <Link
-            href="/panel/solicitudes"
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: "inline-flex",
-              marginRight: 12,
-              marginBottom: 28,
-              padding: "13px 21px",
-              border: "1px solid var(--rust)",
-              color: "var(--rust)",
-              textDecoration: "none",
-            }}
-          >
-            Solicitudes de acceso
-          </Link>
-        ) : null}
-        <Link
-          href="/panel/nuevo-render"
-          style={{
-            display: "inline-flex",
-            marginBottom: 28,
-            padding: "14px 22px",
-            background: "var(--rust)",
-            color: "var(--cream)",
-            textDecoration: "none",
-          }}
-        >
-          Crear nuevo render
-        </Link>
-        {projectsWithUrls.length ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 18 }}>
-            {projectsWithUrls.map((project) => (
-              <article key={project.id} style={{ overflow: "hidden", background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
-                {project.renders[0]?.signedUrl ? (
-                  // Signed Supabase URLs are generated dynamically and cannot use Next Image optimization safely.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={project.renders[0].signedUrl}
-                    alt={`Render de ${project.name}`}
-                    style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }}
-                  />
-                ) : null}
-                <div style={{ padding: 24 }}>
-                <h2 style={{ margin: "0 0 8px", fontFamily: "var(--font-lora)", fontWeight: 500 }}>{project.name}</h2>
-                <p style={{ margin: 0, color: "#655d58", lineHeight: 1.6 }}>
-                  {project.description || "Proyecto de visualización"}
-                </p>
-                <p style={{ color: "#817770", fontSize: 12 }}>
-                  {project.renders.length} {project.renders.length === 1 ? "render" : "renders"}
-                </p>
-                {project.renders[0]?.signedUrl ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
-                    <a href={project.renders[0].signedUrl} download style={projectActionStyle}>
-                      Descargar
-                    </a>
-                    <Link href={`/panel/nuevo-render?sourceRenderId=${project.renders[0].id}`} style={projectActionStyle}>
-                      Crear variación
-                    </Link>
-                    <Link href={`/panel/render/${project.renders[0].id}/editar`} style={projectActionStyle}>
-                      Editar zona
-                    </Link>
-                  </div>
-                ) : (
-                  <p style={{ margin: "16px 0 0", color: "#817770", fontSize: 12 }}>
-                    {project.renders[0]?.status === "failed" ? "La generación falló" : "Preparando render…"}
-                  </p>
-                )}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div style={{ maxWidth: 620, padding: "clamp(28px,5vw,48px)", background: "var(--cream)", border: "1px solid rgba(38,34,32,.1)" }}>
-            <h2 style={{ margin: "0 0 12px", fontFamily: "var(--font-lora)", fontSize: 30, fontWeight: 500 }}>
-              Tu espacio está listo
-            </h2>
-            <p style={{ margin: 0, color: "#655d58", lineHeight: 1.7 }}>
-              Aquí aparecerán tus proyectos, planos, moodboards y versiones de render. La creación de proyectos será el siguiente módulo.
-            </p>
-          </div>
-        )}
+      <section className="workspace-metrics">
+        <article><span>Proyectos activos</span><strong>{activeProjects}</strong><small>en el estudio</small></article>
+        <article><span>Decisiones pendientes</span><strong>{pendingApprovals}</strong><small>por aprobar</small></article>
+        <article><span>Trabajo abierto</span><strong>{pendingTasks}</strong><small>tareas próximas</small></article>
+        <article className="is-accent"><span>Pipeline cotizado</span><strong>{money(pipeline)}</strong><small>por cerrar</small></article>
       </section>
-    </main>
+
+      <section className="workspace-grid workspace-grid-main">
+        <article className="workspace-card workspace-card-wide">
+          <div className="workspace-card-head">
+            <div><small>Portafolio activo</small><h2>Proyectos en movimiento</h2></div>
+            <Link href="/panel/proyectos">Ver todos ↗</Link>
+          </div>
+          <div className="project-list">
+            {(projects ?? []).length ? (projects ?? []).map((project) => (
+              <Link href={`/panel/proyectos/${project.id}`} key={project.id} className="project-row">
+                <span className={`project-status status-${project.status}`} />
+                <div>
+                  <strong>{project.name}</strong>
+                  <small>{relationOne(project.client)?.name || "Proyecto interno"}</small>
+                </div>
+                <span className="project-stage">{stageLabel(project.stage)}</span>
+                <span>{project.due_date ? shortDate(project.due_date) : "Sin entrega"}</span>
+                <b>↗</b>
+              </Link>
+            )) : (
+              <div className="workspace-empty">
+                <span>Tu próximo gran proyecto empieza aquí.</span>
+                <Link href="/panel/proyectos?nuevo=1">Crear proyecto</Link>
+              </div>
+            )}
+          </div>
+        </article>
+
+        <article className="workspace-card">
+          <div className="workspace-card-head">
+            <div><small>Próximos pasos</small><h2>Agenda crítica</h2></div>
+          </div>
+          <div className="task-list">
+            {(tasks ?? []).length ? (tasks ?? []).map((task) => (
+              <div className="task-row" key={task.id}>
+                <span className={`priority-${task.priority}`} />
+                <div><strong>{task.title}</strong><small>{relationOne(task.project)?.name || "Estudio"}</small></div>
+                <time>{task.due_at ? shortDate(task.due_at) : "Abierta"}</time>
+              </div>
+            )) : <p className="muted">No hay tareas pendientes.</p>}
+          </div>
+        </article>
+      </section>
+
+      <section className="workspace-grid workspace-grid-thirds">
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Clientes</small><h2>Relaciones activas</h2></div></div>
+          <strong className="large-number">{clients?.length ?? 0}</strong>
+          <p className="muted">Expedientes con información, preferencias y proyectos relacionados.</p>
+          <Link href="/panel/clientes" className="text-link">Abrir directorio →</Link>
+        </article>
+        <article className="workspace-card">
+          <div className="workspace-card-head"><div><small>Render Lab</small><h2>Inteligencia visual</h2></div></div>
+          <strong className="large-number">{profile.unlimited_credits ? "∞" : profile.credit_balance ?? 0}</strong>
+          <p className="muted">Créditos disponibles para generación y edición bajo marca Muromío.</p>
+          <Link href="/panel/nuevo-render" className="text-link">Crear propuesta →</Link>
+        </article>
+        <article className="workspace-card workspace-card-dark">
+          <div className="workspace-card-head"><div><small>Actividad</small><h2>Lo último</h2></div></div>
+          {(activity ?? []).slice(0, 3).map((event) => (
+            <p key={event.id} className="activity-brief">{event.summary}<small>{shortDate(event.created_at)}</small></p>
+          ))}
+          {!(activity ?? []).length ? <p className="muted">La actividad del despacho aparecerá aquí.</p> : null}
+        </article>
+      </section>
+    </WorkspaceShell>
   );
 }
 
-const projectActionStyle = {
-  display: "inline-flex",
-  padding: "9px 12px",
-  border: "1px solid rgba(38,34,32,.2)",
-  color: "var(--ink)",
-  textDecoration: "none",
-  fontSize: 12,
-} as const;
+function stageLabel(stage: string) {
+  return ({
+    brief: "Brief",
+    concept: "Concepto",
+    design: "Diseño",
+    development: "Desarrollo",
+    procurement: "Compras",
+    construction: "Obra",
+    delivery: "Entrega",
+  } as Record<string, string>)[stage] || stage;
+}
