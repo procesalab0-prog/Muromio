@@ -10,6 +10,221 @@
   --rust-light: #c98e7f;
 }
 
+.form-error {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #b94d3b;
+  background: #fff3ef;
+  color: #8d2f22;
+  font-size: 0.88rem;
+}
+
+.coming-badge {
+  display: inline-flex;
+  align-items: center;
+  width: auto !important;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: #b94d3b;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.task-status-form {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.task-status-form select,
+.task-status-form button,
+.payment-list form select,
+.payment-list form button {
+  min-width: 0;
+  border: 1px solid rgba(43, 39, 35, 0.18);
+  background: transparent;
+  padding: 0.4rem;
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.task-status-form button,
+.payment-list form button {
+  cursor: pointer;
+}
+
+.payment-list form {
+  display: flex;
+  grid-column: 2 / -1;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.client-version-list article > div img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  margin-bottom: 1.25rem;
+  object-fit: cover;
+}
+
+.print-document {
+  width: min(960px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 3rem 0;
+  color: #2b2723;
+  background: #f5f0e8;
+}
+
+.print-document > header,
+.print-document > footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(43, 39, 35, 0.22);
+}
+
+.print-document > footer {
+  border-top: 1px solid rgba(43, 39, 35, 0.22);
+  border-bottom: 0;
+}
+
+.print-document header div:last-child,
+.print-document footer {
+  text-align: right;
+}
+
+.print-document header small,
+.print-document footer small {
+  display: block;
+  margin-top: 0.3rem;
+  opacity: 0.6;
+}
+
+.print-brand {
+  font-size: 2rem;
+}
+
+.print-cover {
+  min-height: 62vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5rem 0;
+}
+
+.print-cover h1 {
+  max-width: 850px;
+  margin: 1rem 0 0;
+  font-family: var(--font-display), serif;
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 400;
+  line-height: 0.92;
+}
+
+.print-cover h2 {
+  margin: 1rem 0 4rem;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.print-cover div span,
+.print-cover div strong {
+  display: block;
+}
+
+.print-section {
+  padding: 4rem 0;
+  border-top: 1px solid rgba(43, 39, 35, 0.22);
+}
+
+.print-section > span {
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.print-section > h2 {
+  margin: 0.8rem 0 2rem;
+  font-family: var(--font-display), serif;
+  font-size: clamp(2.2rem, 5vw, 4.5rem);
+  font-weight: 400;
+}
+
+.print-section > p {
+  max-width: 760px;
+  font-size: 1.25rem;
+  line-height: 1.65;
+}
+
+.print-section dl,
+.print-section ol {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  padding: 0;
+}
+
+.print-section dl div,
+.print-section li,
+.print-section article {
+  padding: 1rem 0;
+  border-top: 1px solid rgba(43, 39, 35, 0.18);
+  list-style: none;
+}
+
+.print-section dt,
+.print-section li small {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.print-section article {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.print-section article p {
+  margin: 0.35rem 0 0;
+  opacity: 0.65;
+}
+
+.print-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5rem 0;
+  border-top: 2px solid #2b2723;
+  font-size: 1.25rem;
+}
+
+@media print {
+  .print-document {
+    width: 100%;
+    padding: 0;
+  }
+
+  .print-section {
+    break-inside: avoid;
+  }
+}
+
+@media (max-width: 700px) {
+  .print-section dl,
+  .print-section ol {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @theme inline {
   --color-sand: var(--sand);
   --color-cream: var(--cream);

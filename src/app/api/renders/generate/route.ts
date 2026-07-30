@@ -111,17 +111,16 @@ export async function POST(request: Request) {
 
   let projectId = existingProjectId;
   if (!projectId) {
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .insert({ owner_id: user.id, name: projectName })
-      .select("id")
-      .single();
+    const { data: project, error: projectError } = await supabase.rpc(
+      "create_workspace_project",
+      { p_name: projectName },
+    );
 
     if (projectError || !project) {
       console.error("Could not create project", projectError);
       return NextResponse.json({ error: "No pudimos crear el proyecto." }, { status: 500 });
     }
-    projectId = project.id;
+    projectId = project;
   }
 
   const { data: render, error: renderError } = await supabase
@@ -209,7 +208,7 @@ export async function POST(request: Request) {
       throw new Error(`Could not store output: ${outputUploadError.message}`);
     }
 
-    await supabase
+    const { error: completionError } = await supabase
       .from("renders")
       .update({
         status: "completed",
@@ -217,6 +216,13 @@ export async function POST(request: Request) {
         completed_at: new Date().toISOString(),
       })
       .eq("id", render.id);
+    if (completionError) throw new Error(`Could not complete render: ${completionError.message}`);
+
+    const { error: versionError } = await supabase.rpc("register_render_version", {
+      p_render_id: render.id,
+      p_title: projectName || "Propuesta visual",
+    });
+    if (versionError) console.error("Could not register render version", versionError);
 
     return NextResponse.json({
       renderId: render.id,

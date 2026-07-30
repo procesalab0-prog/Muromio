@@ -8,6 +8,7 @@ const navigation = [
   { href: "/panel/estilos", label: "Estilos Muromío", mark: "04" },
   { href: "/panel/finanzas", label: "Presupuestos", mark: "05" },
   { href: "/panel/actividad", label: "Actividad", mark: "06" },
+  { href: "/panel/nuevo-render", label: "Render Lab", mark: "AI" },
 ];
 
 export function WorkspaceShell({

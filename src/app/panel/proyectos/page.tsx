@@ -6,9 +6,9 @@ import { money, requireWorkspace, shortDate } from "@/lib/workspace";
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ nuevo?: string }>;
+  searchParams: Promise<{ nuevo?: string; error?: string }>;
 }) {
-  const { nuevo } = await searchParams;
+  const { nuevo, error } = await searchParams;
   const { supabase, profile } = await requireWorkspace();
   const [{ data: projects }, { data: clients }] = await Promise.all([
     supabase
@@ -30,6 +30,7 @@ export default async function ProjectsPage({
         <section className="workspace-card project-create">
           <div className="workspace-card-head"><div><small>Alta de proyecto</small><h2>Crear un nuevo espacio</h2></div><Link href="/panel/proyectos">Cerrar ×</Link></div>
           <form action={createProject} className="workspace-form">
+            {error ? <p className="form-error" role="alert">{error}</p> : null}
             <div className="form-pair">
               <label>Nombre del proyecto<input name="name" required placeholder="Casa Encino" /></label>
               <label>Cliente<select name="client_id" defaultValue=""><option value="">Proyecto interno</option>{(clients ?? []).map((client) => <option value={client.id} key={client.id}>{client.name}</option>)}</select></label>

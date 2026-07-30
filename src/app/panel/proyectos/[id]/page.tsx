@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createBudget, createComment, createProjectDocument, createShareLink, createTask, queueProjectVideo, requestApproval } from "@/app/panel/actions";
+import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, requestApproval, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
 import { BeforeAfter } from "@/components/before-after";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
@@ -25,6 +25,7 @@ export default async function ProjectDetailPage({
     { data: videos },
     { data: documents },
     { data: shareLinks },
+    { data: members },
   ] = await Promise.all([
     supabase.from("projects").select("*,client:clients(*)").eq("id", id).single(),
     supabase.from("project_phases").select("*").eq("project_id", id).order("sort_order"),
@@ -38,6 +39,7 @@ export default async function ProjectDetailPage({
     supabase.from("project_videos").select("*").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("generated_documents").select("*").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("share_links").select("*").eq("project_id", id).is("revoked_at", null).order("created_at", { ascending: false }),
+    supabase.from("project_members").select("*,profile:profiles(full_name,email)").eq("project_id", id).order("created_at"),
   ]);
 
   if (!project) notFound();
@@ -46,8 +48,10 @@ export default async function ProjectDetailPage({
   const commentAction = createComment.bind(null, id);
   const approvalAction = requestApproval.bind(null, id);
   const shareAction = createShareLink.bind(null, id);
-  const videoAction = queueProjectVideo.bind(null, id);
   const documentAction = createProjectDocument.bind(null, id);
+  const fileAction = uploadProjectFile.bind(null, id);
+  const paymentAction = createPayment.bind(null, id);
+  const memberAction = addProjectMember.bind(null, id);
   const approvedPhases = (phases ?? []).filter((phase) => ["approved", "completed"].includes(phase.status)).length;
   const progress = phases?.length ? Math.round((approvedPhases / phases.length) * 100) : 0;
   const renderUrls = await Promise.all(
@@ -59,6 +63,12 @@ export default async function ProjectDetailPage({
         return data?.signedUrl || null;
       }),
   );
+  const fileLinks = await Promise.all(
+    (files ?? []).slice(0, 6).map(async (file) => {
+      const { data } = await supabase.storage.from("project-assets").createSignedUrl(file.storage_path, 60 * 30);
+      return { ...file, signedUrl: data?.signedUrl || null };
+    }),
+  );
 
   return (
     <WorkspaceShell section="/panel/proyectos" userName={profile.full_name || profile.email || "Muromío"} role={profile.role}>
@@ -66,7 +76,7 @@ export default async function ProjectDetailPage({
         eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
         title={project.name}
         description={project.description || "Expediente central del proyecto."}
-        actions={<><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><button className="button-secondary">Compartir ↗</button></>}
+        actions={<><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir ↗</a></>}
       />
 
       <section className="project-overview">
@@ -82,6 +92,7 @@ export default async function ProjectDetailPage({
           <div><span>Presupuesto objetivo</span><strong>{money(project.target_budget)}</strong></div>
           <div><span>Entrega</span><strong>{shortDate(project.due_date)}</strong></div>
           <div><span>Superficie</span><strong>{project.area_m2 ? `${project.area_m2} m²` : "Por definir"}</strong></div>
+          <div><span>Equipo</span><strong>{(members?.length ?? 0) + 1} personas</strong></div>
         </article>
       </section>
 
@@ -99,7 +110,12 @@ export default async function ProjectDetailPage({
               <div key={status}>
                 <h3>{taskStatus(status)} <span>{(tasks ?? []).filter((task) => task.status === status).length}</span></h3>
                 {(tasks ?? []).filter((task) => task.status === status).map((task) => (
-                  <article key={task.id}><i className={`priority-${task.priority}`} /><strong>{task.title}</strong><p>{task.description || "Sin notas adicionales"}</p><small>{task.due_at ? shortDate(task.due_at) : "Sin fecha"}</small></article>
+                  <article key={task.id}><i className={`priority-${task.priority}`} /><strong>{task.title}</strong><p>{task.description || "Sin notas adicionales"}</p><small>{task.due_at ? shortDate(task.due_at) : "Sin fecha"}</small>
+                    <form action={updateTaskStatus.bind(null, id, task.id)} className="task-status-form">
+                      <select name="status" defaultValue={task.status}>{["todo", "in_progress", "review", "done"].map((value) => <option value={value} key={value}>{taskStatus(value)}</option>)}</select>
+                      <button type="submit">Actualizar</button>
+                    </form>
+                  </article>
                 ))}
               </div>
             ))}
@@ -126,6 +142,14 @@ export default async function ProjectDetailPage({
             </form>
             <div className="comment-list">{(comments ?? []).slice(0, 5).map((comment) => <article key={comment.id}><strong>{comment.author_name || "Muromío"}</strong><small>{comment.visibility === "client" ? "Cliente" : "Interno"} · {shortDate(comment.created_at)}</small><p>{comment.body}</p></article>)}</div>
           </article>
+          <article className="workspace-card">
+            <div className="workspace-card-head"><div><small>Colaboración</small><h2>Equipo del proyecto</h2></div><span>{(members?.length ?? 0) + 1}</span></div>
+            <form action={memberAction} className="workspace-form compact-form">
+              <input name="email" type="email" required placeholder="Correo de una cuenta aprobada" />
+              <div className="form-pair"><select name="role" defaultValue="architect"><option value="director">Dirección</option><option value="architect">Arquitectura</option><option value="designer">Diseño</option><option value="viewer">Consulta</option><option value="client">Cliente</option></select><button className="button-secondary" type="submit">Agregar</button></div>
+            </form>
+            <div className="comment-list"><article><strong>{profile.full_name || profile.email}</strong><small>Responsable del proyecto</small></article>{(members ?? []).map((member) => <article key={member.user_id}><strong>{relationOne(member.profile)?.full_name || relationOne(member.profile)?.email || "Colaborador"}</strong><small>{member.role}</small></article>)}</div>
+          </article>
         </aside>
       </section>
 
@@ -145,13 +169,33 @@ export default async function ProjectDetailPage({
             <button className="button-primary" type="submit">Preparar presupuesto</button>
           </form>
           {(budgets ?? []).slice(0, 3).map((budget) => <div className="budget-row" key={budget.id}><div><strong>{budget.number}</strong><small>{budget.title}</small></div><span>{money(budget.total)}</span></div>)}
+          {budgets?.[0] ? (
+            <form action={createBudgetItem.bind(null, id, budgets[0].id)} className="workspace-form compact-form">
+              <small>Agregar partida a {budgets[0].number}</small>
+              <input name="concept" required placeholder="Concepto" />
+              <div className="form-pair"><input name="quantity" type="number" min="0.01" step="0.01" defaultValue="1" /><input name="unit_price" type="number" min="0" step="0.01" placeholder="Precio unitario" /></div>
+              <button className="button-secondary" type="submit">Agregar partida</button>
+            </form>
+          ) : null}
+          <form action={paymentAction} className="workspace-form compact-form">
+            <small>Programar cobro</small>
+            <input name="concept" required placeholder="Anticipo o parcialidad" />
+            <div className="form-pair"><input name="amount" required type="number" min="0.01" step="0.01" placeholder="Importe" /><input name="due_on" type="date" /></div>
+            <select name="budget_id" defaultValue=""><option value="">Sin presupuesto asociado</option>{(budgets ?? []).map((budget) => <option value={budget.id} key={budget.id}>{budget.number}</option>)}</select>
+            <button className="button-secondary" type="submit">Programar</button>
+          </form>
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Centro de archivos</small><h2>Entregables</h2></div><span>{(files ?? []).length}</span></div>
           <div className="file-category-grid">
             {["plan", "render", "budget", "contract", "video", "delivery"].map((category) => <div key={category}><strong>{(files ?? []).filter((file) => file.category === category).length}</strong><span>{fileCategory(category)}</span></div>)}
           </div>
-          <p className="muted">Planos, contratos, videos y documentos quedarán organizados por proyecto.</p>
+          <form action={fileAction} className="workspace-form compact-form">
+            <input name="file" type="file" required />
+            <div className="form-pair"><select name="category" defaultValue="other"><option value="plan">Plano</option><option value="reference">Referencia</option><option value="contract">Contrato</option><option value="budget">Presupuesto</option><option value="delivery">Entrega</option><option value="other">Otro</option></select><label className="checkbox-label"><input name="is_client_visible" type="checkbox" /> Visible al cliente</label></div>
+            <button className="button-secondary" type="submit">Subir archivo</button>
+          </form>
+          {fileLinks.map((file) => file.signedUrl ? <a className="tool-result" href={file.signedUrl} target="_blank" rel="noreferrer" key={file.id}><span>{file.name}</span><small>{fileCategory(file.category)} ↗</small></a> : null)}
         </article>
       </section>
 
@@ -164,7 +208,7 @@ export default async function ProjectDetailPage({
             <div className="comparison-empty"><strong>Dos versiones desbloquean el comparador.</strong><p>Genera una variación para presentar la evolución visual con un deslizador.</p><Link href="/panel/nuevo-render">Crear otra versión →</Link></div>
           )}
         </article>
-        <article className="workspace-card presentation-tools">
+        <article className="workspace-card presentation-tools" id="presentar">
           <div className="workspace-card-head"><div><small>Marca blanca</small><h2>Presentar y entregar</h2></div></div>
           <details open>
             <summary>Enlace privado <span>{shareLinks?.length ?? 0}</span></summary>
@@ -177,22 +221,18 @@ export default async function ProjectDetailPage({
             {(shareLinks ?? []).slice(0, 2).map((link) => <p className="tool-result" key={link.id}><span>{link.label}</span><Link href={`/presentacion/${link.token}`} target="_blank">Abrir ↗</Link></p>)}
           </details>
           <details>
-            <summary>Video de presentación <span>{videos?.length ?? 0}</span></summary>
-            <form action={videoAction} className="workspace-form compact-form">
-              <input name="title" placeholder="Recorrido Casa Roble" />
-              <select name="format" defaultValue="landscape"><option value="landscape">Horizontal · presentación</option><option value="portrait">Vertical · redes</option><option value="square">Cuadrado</option></select>
-              <button className="button-secondary" type="submit">Preparar video</button>
-            </form>
-            {(videos ?? []).slice(0, 2).map((video) => <p className="tool-result" key={video.id}><span>{video.title}</span><small>{video.status}</small></p>)}
+            <summary>Video de presentación <span className="coming-badge">Próximamente</span></summary>
+            <p className="muted">Recorridos y reels automáticos llegarán en una próxima versión. No consume créditos ni crea solicitudes por ahora.</p>
+            {(videos ?? []).slice(0, 2).map((video) => <p className="tool-result" key={video.id}><span>{video.title}</span><small>Solicitud anterior · {video.status}</small></p>)}
           </details>
           <details>
             <summary>Documento Muromío <span>{documents?.length ?? 0}</span></summary>
             <form action={documentAction} className="workspace-form compact-form">
               <select name="document_type" defaultValue="proposal"><option value="proposal">Propuesta de diseño</option><option value="brief">Brief</option><option value="minutes">Minuta</option><option value="spec_sheet">Fichas técnicas</option><option value="weekly_report">Reporte semanal</option><option value="approval">Acta de aprobación</option><option value="delivery_manual">Manual de entrega</option></select>
               <input name="title" placeholder="Título personalizado (opcional)" />
-              <button className="button-secondary" type="submit">Crear borrador</button>
+              <button className="button-secondary" type="submit">Crear documento</button>
             </form>
-            {(documents ?? []).slice(0, 2).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><small>{document.status}</small></p>)}
+            {(documents ?? []).slice(0, 3).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><Link href={`/panel/proyectos/${id}/documentos/${document.id}`} target="_blank">Abrir ↗</Link></p>)}
           </details>
         </article>
       </section>

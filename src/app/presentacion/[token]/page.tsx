@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { shortDate } from "@/lib/workspace";
@@ -20,6 +21,7 @@ type SharedPresentation = {
     title: string;
     description: string | null;
     asset_type: string;
+    asset_path: string | null;
     status: string;
     created_at: string;
   }>;
@@ -35,6 +37,11 @@ export default async function SharedPresentationPage({
   const { data } = await supabase.rpc("get_shared_presentation", { p_token: token });
   const presentation = data as SharedPresentation | null;
   if (!presentation) notFound();
+  const versions = await Promise.all(presentation.versions.map(async (version) => {
+    if (!version.asset_path) return { ...version, imageUrl: null };
+    const { data: signed } = await supabase.storage.from("render-assets").createSignedUrl(version.asset_path, 60 * 30);
+    return { ...version, imageUrl: signed?.signedUrl || null };
+  }));
 
   async function respond(formData: FormData) {
     "use server";
@@ -65,10 +72,10 @@ export default async function SharedPresentationPage({
       </section>
       <section className="client-version-list">
         <div className="client-section-title"><span>Propuestas</span><h2>Historia de decisiones</h2></div>
-        {presentation.versions.length ? presentation.versions.map((version) => (
+        {versions.length ? versions.map((version) => (
           <article key={version.id}>
             <b>V{version.version_number}</b>
-            <div><h3>{version.title}</h3><p>{version.description || "Propuesta preparada por el equipo Muromío."}</p></div>
+            <div>{version.imageUrl ? <Image src={version.imageUrl} alt={version.title} width={1600} height={1000} unoptimized /> : null}<h3>{version.title}</h3><p>{version.description || "Propuesta preparada por el equipo Muromío."}</p></div>
             <span>{version.asset_type}<small>{shortDate(version.created_at)}</small></span>
           </article>
         )) : <p className="client-empty">El equipo está preparando los entregables visibles para esta presentación.</p>}

@@ -165,7 +165,7 @@ export async function POST(request: Request) {
 
     if (uploadError) throw new Error(uploadError.message);
 
-    await supabase
+    const { error: completionError } = await supabase
       .from("renders")
       .update({
         status: "completed",
@@ -173,6 +173,13 @@ export async function POST(request: Request) {
         completed_at: new Date().toISOString(),
       })
       .eq("id", render.id);
+    if (completionError) throw new Error(completionError.message);
+
+    const { error: versionError } = await supabase.rpc("register_render_version", {
+      p_render_id: render.id,
+      p_title: "Edición de render",
+    });
+    if (versionError) console.error("Could not register edited version", versionError);
 
     return NextResponse.json({
       renderId: render.id,

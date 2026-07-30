@@ -13,7 +13,9 @@ function optionalText(formData: FormData, key: string, max = 500) {
 }
 
 function numberValue(formData: FormData, key: string) {
-  const value = Number(formData.get(key));
+  const raw = String(formData.get(key) ?? "").trim();
+  if (!raw) return null;
+  const value = Number(raw);
   return Number.isFinite(value) ? value : null;
 }
 
@@ -61,40 +63,26 @@ export async function createClient(formData: FormData) {
 }
 
 export async function createProject(formData: FormData) {
-  const { supabase, user } = await requireWorkspace();
+  const { supabase } = await requireWorkspace();
   const name = text(formData, "name", 120);
   if (!name) throw new Error("El nombre del proyecto es obligatorio.");
 
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      owner_id: user.id,
-      client_id: optionalText(formData, "client_id", 80),
-      name,
-      description: optionalText(formData, "description", 1500),
-      project_type: optionalText(formData, "project_type", 100),
-      location: optionalText(formData, "location", 180),
-      area_m2: numberValue(formData, "area_m2"),
-      target_budget: numberValue(formData, "target_budget"),
-      due_date: optionalText(formData, "due_date", 20),
-      status: "planning",
-      stage: "brief",
-    })
-    .select("id")
-    .single();
+  const clientId = optionalText(formData, "client_id", 80);
+  const { data, error } = await supabase.rpc("create_workspace_project", {
+    p_name: name,
+    p_client_id: clientId,
+    p_description: optionalText(formData, "description", 1500),
+    p_project_type: optionalText(formData, "project_type", 100),
+    p_location: optionalText(formData, "location", 180),
+    p_area_m2: numberValue(formData, "area_m2"),
+    p_target_budget: numberValue(formData, "target_budget"),
+    p_due_date: optionalText(formData, "due_date", 20),
+  });
 
-  if (error) throw new Error(error.message);
-
-  await supabase.from("project_phases").insert(
-    ["Brief", "Concepto", "Diseño", "Desarrollo", "Compras", "Obra", "Entrega"].map((phase, index) => ({
-      project_id: data.id,
-      name: phase,
-      status: index === 0 ? "active" : "pending",
-      sort_order: index,
-    })),
-  );
-  await recordActivity(data.id, "project.created", "project", data.id, `Se creó el proyecto ${name}.`);
-  redirect(`/panel/proyectos/${data.id}`);
+  if (error || !data) {
+    redirect(`/panel/proyectos?nuevo=1&error=${encodeURIComponent("No pudimos crear el proyecto. Intenta nuevamente.")}`);
+  }
+  redirect(`/panel/proyectos/${data}`);
 }
 
 export async function createStyle(formData: FormData) {
@@ -244,22 +232,9 @@ export async function createShareLink(projectId: string, formData: FormData) {
 }
 
 export async function queueProjectVideo(projectId: string, formData: FormData) {
-  const { supabase, user } = await requireWorkspace();
-  const title = text(formData, "title", 160) || "Presentación Muromío";
-  const { data, error } = await supabase
-    .from("project_videos")
-    .insert({
-      project_id: projectId,
-      title,
-      format: text(formData, "format", 30) || "landscape",
-      status: "queued",
-      created_by: user.id,
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
-  await recordActivity(projectId, "video.queued", "video", data.id, `Se preparó la solicitud de video ${title}.`);
-  revalidatePath(`/panel/proyectos/${projectId}`);
+  void projectId;
+  void formData;
+  throw new Error("La generación de video estará disponible próximamente.");
 }
 
 export async function createProjectDocument(projectId: string, formData: FormData) {
@@ -272,12 +247,119 @@ export async function createProjectDocument(projectId: string, formData: FormDat
       project_id: projectId,
       document_type: documentType,
       title,
+      status: "ready",
       created_by: user.id,
     })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
   await recordActivity(projectId, "document.created", "document", data.id, `Se inició el documento ${title}.`);
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function updateTaskStatus(projectId: string, taskId: string, formData: FormData) {
+  const { supabase } = await requireWorkspace();
+  const status = text(formData, "status", 30);
+  if (!["todo", "in_progress", "review", "done"].includes(status)) return;
+  const { error } = await supabase.from("tasks").update({
+    status,
+    completed_at: status === "done" ? new Date().toISOString() : null,
+  }).eq("id", taskId).eq("project_id", projectId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function uploadProjectFile(projectId: string, formData: FormData) {
+  const { supabase, user } = await requireWorkspace();
+  const file = formData.get("file");
+  if (!(file instanceof File) || !file.size) throw new Error("Selecciona un archivo.");
+  if (file.size > 50 * 1024 * 1024) throw new Error("El archivo no puede superar 50 MB.");
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(-140);
+  const storagePath = `${user.id}/${projectId}/${crypto.randomUUID()}-${safeName}`;
+  const { error: uploadError } = await supabase.storage
+    .from("project-assets")
+    .upload(storagePath, file, { contentType: file.type || "application/octet-stream" });
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data, error } = await supabase.from("project_files").insert({
+    project_id: projectId,
+    uploaded_by: user.id,
+    name: file.name.slice(0, 220),
+    storage_path: storagePath,
+    mime_type: file.type || null,
+    size_bytes: file.size,
+    category: text(formData, "category", 30) || "other",
+    is_client_visible: formData.get("is_client_visible") === "on",
+  }).select("id").single();
+  if (error) {
+    await supabase.storage.from("project-assets").remove([storagePath]);
+    throw new Error(error.message);
+  }
+  await recordActivity(projectId, "file.uploaded", "project_file", data.id, `Se agregó el archivo ${file.name}.`);
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function createBudgetItem(projectId: string, budgetId: string, formData: FormData) {
+  const { supabase } = await requireWorkspace();
+  const concept = text(formData, "concept", 180);
+  if (!concept) return;
+  const { error } = await supabase.from("budget_items").insert({
+    budget_id: budgetId,
+    concept,
+    description: optionalText(formData, "description", 600),
+    quantity: numberValue(formData, "quantity") ?? 1,
+    unit: text(formData, "unit", 40) || "servicio",
+    unit_price: numberValue(formData, "unit_price") ?? 0,
+  });
+  if (error) throw new Error(error.message);
+  const { error: totalError } = await supabase.rpc("recalculate_budget", { target_budget_id: budgetId });
+  if (totalError) throw new Error(totalError.message);
+  revalidatePath("/panel/finanzas");
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function createPayment(projectId: string, formData: FormData) {
+  const { supabase } = await requireWorkspace();
+  const concept = text(formData, "concept", 180);
+  const amount = numberValue(formData, "amount");
+  if (!concept || amount === null || amount <= 0) return;
+  const { error } = await supabase.from("payments").insert({
+    project_id: projectId,
+    budget_id: optionalText(formData, "budget_id", 80),
+    concept,
+    amount,
+    due_on: optionalText(formData, "due_on", 20),
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/panel/finanzas");
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function updatePaymentStatus(paymentId: string, formData: FormData) {
+  const { supabase } = await requireWorkspace();
+  const status = text(formData, "status", 20);
+  if (!["pending", "paid", "overdue", "cancelled"].includes(status)) return;
+  const { error } = await supabase.from("payments").update({
+    status,
+    paid_at: status === "paid" ? new Date().toISOString() : null,
+  }).eq("id", paymentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/panel/finanzas");
+}
+
+export async function addProjectMember(projectId: string, formData: FormData) {
+  const { supabase } = await requireWorkspace();
+  const email = text(formData, "email", 180);
+  const role = text(formData, "role", 30) || "architect";
+  if (!email) return;
+  const { error } = await supabase.rpc("add_project_member_by_email", {
+    p_project_id: projectId,
+    p_email: email,
+    p_role: role,
+  });
+  if (error) throw new Error(error.message.includes("approved_user_not_found")
+    ? "No encontramos una cuenta aprobada con ese correo."
+    : error.message);
   revalidatePath(`/panel/proyectos/${projectId}`);
 }
 

@@ -1,4 +1,5 @@
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
+import { updatePaymentStatus } from "@/app/panel/actions";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
 
 export default async function FinancePage() {
@@ -32,7 +33,7 @@ export default async function FinancePage() {
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Cobranza</small><h2>Calendario</h2></div></div>
-          <div className="payment-list">{(payments ?? []).map((payment) => <article key={payment.id}><span className={`payment-${payment.status}`} /><div><strong>{payment.concept}</strong><small>{relationOne(payment.project)?.name || "Muromío"} · {shortDate(payment.due_on)}</small></div><b>{money(payment.amount, payment.currency)}</b></article>)}</div>
+          <div className="payment-list">{(payments ?? []).map((payment) => <article key={payment.id}><span className={`payment-${payment.status}`} /><div><strong>{payment.concept}</strong><small>{relationOne(payment.project)?.name || "Muromío"} · {shortDate(payment.due_on)}</small></div><b>{money(payment.amount, payment.currency)}</b><form action={updatePaymentStatus.bind(null, payment.id)}><select name="status" defaultValue={payment.status}><option value="pending">Pendiente</option><option value="paid">Pagado</option><option value="overdue">Vencido</option><option value="cancelled">Cancelado</option></select><button type="submit">Guardar</button></form></article>)}</div>
           {!(payments ?? []).length ? <p className="muted">Aún no hay parcialidades programadas.</p> : null}
         </article>
       </section>
