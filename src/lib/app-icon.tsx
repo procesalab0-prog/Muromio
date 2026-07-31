@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
+const ICON_BG = "#864B3F";
+const ICON_TEXT = "#262220";
+
 async function loadWordmarkFonts() {
   const [lora, jost] = await Promise.all([
     readFile(join(process.cwd(), "assets/fonts/Lora-SemiBold.ttf")),
@@ -23,8 +26,8 @@ export function renderMonogramIcon(pixelSize: number) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#262220",
-          color: "#EFE7DC",
+          background: ICON_BG,
+          color: ICON_TEXT,
           fontSize: Math.round(pixelSize * 0.52),
           fontWeight: 600,
         }}
@@ -49,10 +52,10 @@ export async function renderWordmarkIcon(pixelSize: number) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#262220",
+          background: ICON_BG,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", fontSize, color: "#EFE7DC" }}>
+        <div style={{ display: "flex", alignItems: "baseline", fontSize, color: ICON_TEXT }}>
           <span style={{ fontFamily: "Lora", fontWeight: 600 }}>muro</span>
           <span style={{ fontFamily: "Jost", fontWeight: 300 }}>mío</span>
         </div>
