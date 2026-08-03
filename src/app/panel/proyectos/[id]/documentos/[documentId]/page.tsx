@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { money, relationOne, requireWorkspace, shortDate } from "@/lib/workspace";
 
@@ -14,17 +15,26 @@ export default async function ProjectDocumentPage({
     { data: budgets },
     { data: phases },
     { data: versions },
+    { data: renders },
   ] = await Promise.all([
     supabase.from("projects").select("*,client:clients(*)").eq("id", id).single(),
     supabase.from("generated_documents").select("*").eq("id", documentId).eq("project_id", id).single(),
     supabase.from("budgets").select("*,items:budget_items(*)").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("project_phases").select("*").eq("project_id", id).order("sort_order"),
     supabase.from("project_versions").select("*").eq("project_id", id).order("version_number", { ascending: false }),
+    supabase.from("renders").select("id,output_path,created_at,prompt").eq("project_id", id).eq("status", "completed").order("created_at", { ascending: false }),
   ]);
 
   if (!project || !document) notFound();
   const client = relationOne(project.client);
   const budget = budgets?.[0];
+  const sections = new Set<string>(document.included_sections?.length ? document.included_sections : ["vision", "process", "renders", "budget", "notes"]);
+  const selectedIds = new Set<string>(document.render_ids ?? []);
+  const selectedRenders = (renders ?? []).filter((render) => selectedIds.has(render.id));
+  const renderImages = await Promise.all(selectedRenders.map(async (render) => {
+    const { data } = await supabase.storage.from("render-assets").createSignedUrl(render.output_path, 60 * 60);
+    return { ...render, signedUrl: data?.signedUrl || null };
+  }));
 
   return (
     <main className="print-document">
@@ -38,7 +48,7 @@ export default async function ProjectDocumentPage({
         <h2>{project.name}</h2>
         <div><span>Preparado para</span><strong>{client?.name || "Proyecto interno"}</strong></div>
       </section>
-      <section className="print-section">
+      {sections.has("vision") ? <section className="print-section">
         <span>01 · Visión</span>
         <h2>Intención del proyecto</h2>
         <p>{project.description || "Un espacio cálido, funcional y profundamente conectado con las personas que lo habitan."}</p>
@@ -48,20 +58,21 @@ export default async function ProjectDocumentPage({
           <div><dt>Etapa</dt><dd>{project.stage}</dd></div>
           <div><dt>Responsable</dt><dd>{profile.full_name || "Equipo Muromío"}</dd></div>
         </dl>
-      </section>
-      <section className="print-section">
+      </section> : null}
+      {sections.has("process") ? <section className="print-section">
         <span>02 · Ruta</span>
         <h2>Proceso de trabajo</h2>
         <ol>{(phases ?? []).map((phase) => <li key={phase.id}><b>{phase.name}</b><small>{phase.status}</small></li>)}</ol>
-      </section>
-      <section className="print-section">
+        <div className="print-progress"><i style={{ width: `${project.progress_percent ?? 0}%` }} /><span>{project.progress_percent ?? 0}% de avance general</span></div>
+      </section> : null}
+      {sections.has("renders") ? <section className="print-section print-render-section">
         <span>03 · Entregables</span>
-        <h2>Historial creativo</h2>
-        {(versions ?? []).length ? (versions ?? []).slice(0, 8).map((version) => (
+        <h2>Propuestas seleccionadas</h2>
+        {renderImages.length ? <div className="print-render-grid">{renderImages.map((render, index) => render.signedUrl ? <figure key={render.id}><Image src={render.signedUrl} alt={`Propuesta ${index + 1}`} width={1500} height={1000} unoptimized /><figcaption>Propuesta {index + 1} · {shortDate(render.created_at)}</figcaption></figure> : null)}</div> : (versions ?? []).length ? (versions ?? []).slice(0, 8).map((version) => (
           <article key={version.id}><b>V{version.version_number}</b><div><strong>{version.title}</strong><p>{version.description || "Propuesta preparada por Muromío."}</p></div><small>{shortDate(version.created_at)}</small></article>
         )) : <p>Los entregables visuales se incorporarán conforme avance el proyecto.</p>}
-      </section>
-      {budget ? (
+      </section> : null}
+      {sections.has("budget") && budget ? (
         <section className="print-section">
           <span>04 · Inversión</span>
           <h2>{budget.title}</h2>
@@ -71,6 +82,7 @@ export default async function ProjectDocumentPage({
           <div className="print-total"><span>Total con IVA</span><strong>{money(budget.total, budget.currency)}</strong></div>
         </section>
       ) : null}
+      {sections.has("notes") && document.notes ? <section className="print-section"><span>05 · Notas</span><h2>Contexto y decisiones</h2><p>{document.notes}</p></section> : null}
       <footer><span>Muromío · Interiorismo con intención</span><small>Documento generado desde Muromío Studio OS</small></footer>
     </main>
   );

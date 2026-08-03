@@ -6,9 +6,9 @@ import { RenderForm } from "./render-form";
 export default async function NewRenderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sourceRenderId?: string }>;
+  searchParams: Promise<{ sourceRenderId?: string; projectId?: string }>;
 }) {
-  const { sourceRenderId } = await searchParams;
+  const { sourceRenderId, projectId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,6 +29,12 @@ export default async function NewRenderPage({
   }
   if (profile.role === "client") redirect("/panel/proyectos");
 
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("id,name")
+    .neq("status", "archived")
+    .order("updated_at", { ascending: false });
+
   return (
     <WorkspaceShell section="/panel/nuevo-render" userName={profile.full_name || profile.email || "Muromío"} role={profile.role} credits={profile.unlimited_credits ? null : profile.credit_balance}>
       <section className="render-os-head">
@@ -38,7 +44,7 @@ export default async function NewRenderPage({
           ? "Explora otra dirección material sin perder la composición de la versión anterior."
           : "Convierte un plano, boceto o imagen base en una propuesta visual bajo la dirección de Muromío."}</p>
       </section>
-      <RenderForm sourceRenderId={sourceRenderId} initialCredits={profile.credit_balance ?? 0} unlimitedCredits={profile.unlimited_credits ?? false} />
+      <RenderForm sourceRenderId={sourceRenderId} selectedProjectId={projectId} projects={projects ?? []} initialCredits={profile.credit_balance ?? 0} unlimitedCredits={profile.unlimited_credits ?? false} />
     </WorkspaceShell>
   );
 }

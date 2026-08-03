@@ -1,6 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, removeProjectMember, requestApproval, updateProject, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
+import { addProjectMember, createBudget, createBudgetItem, createComment, createPayment, createProjectDocument, createShareLink, createTask, removeProjectMember, requestApproval, updateProject, updateProjectProgress, updateTaskStatus, uploadProjectFile } from "@/app/panel/actions";
 import { BeforeAfter } from "@/components/before-after";
 import { WorkspaceHeader, WorkspaceShell } from "@/components/workspace-shell";
 import { ArrowRightIcon, ExternalLinkIcon } from "@/components/os-icons";
@@ -36,7 +37,7 @@ export default async function ProjectDetailPage({
     supabase.from("project_comments").select("*").eq("project_id", id).order("created_at", { ascending: false }).limit(20),
     supabase.from("budgets").select("*").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("project_files").select("*").eq("project_id", id).order("created_at", { ascending: false }),
-    supabase.from("renders").select("id,status,output_path,created_at").eq("project_id", id).order("created_at", { ascending: false }),
+    supabase.from("renders").select("id,status,output_path,created_at,prompt,provider").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("project_videos").select("*").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("generated_documents").select("*").eq("project_id", id).order("created_at", { ascending: false }),
     supabase.from("share_links").select("*").eq("project_id", id).is("revoked_at", null).order("created_at", { ascending: false }),
@@ -58,16 +59,18 @@ export default async function ProjectDetailPage({
   const paymentAction = createPayment.bind(null, id);
   const memberAction = addProjectMember.bind(null, id);
   const approvedPhases = (phases ?? []).filter((phase) => ["approved", "completed"].includes(phase.status)).length;
-  const progress = phases?.length ? Math.round((approvedPhases / phases.length) * 100) : 0;
-  const renderUrls = await Promise.all(
+  const calculatedProgress = phases?.length ? Math.round((approvedPhases / phases.length) * 100) : 0;
+  const progress = Number.isFinite(project.progress_percent) ? project.progress_percent : calculatedProgress;
+  const renderAssets = await Promise.all(
     (renders ?? [])
       .filter((render) => render.status === "completed" && render.output_path)
-      .slice(0, 2)
+      .slice(0, 60)
       .map(async (render) => {
         const { data } = await supabase.storage.from("render-assets").createSignedUrl(render.output_path!, 60 * 60);
-        return data?.signedUrl || null;
+        return { ...render, signedUrl: data?.signedUrl || null };
       }),
   );
+  const visibleRenders = renderAssets.filter((render) => render.signedUrl);
   const fileLinks = await Promise.all(
     (files ?? []).slice(0, 6).map(async (file) => {
       const { data } = await supabase.storage.from("project-assets").createSignedUrl(file.storage_path, 60 * 30);
@@ -81,13 +84,14 @@ export default async function ProjectDetailPage({
         eyebrow={`${project.project_type || "Proyecto"} / ${project.location || "Muromío"}`}
         title={project.name}
         description={project.description || "Expediente central del proyecto."}
-        actions={canEdit ? <><Link href="/panel/nuevo-render" className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir <ExternalLinkIcon width={12} height={12} /></a></> : undefined}
+        actions={canEdit ? <><Link href={`/panel/nuevo-render?projectId=${id}`} className="button-primary">Generar propuesta</Link><a href="#presentar" className="button-secondary">Compartir <ExternalLinkIcon width={12} height={12} /></a></> : undefined}
       />
 
       <section className="project-overview">
         <article className="project-progress">
           <div><span>Avance general</span><strong>{progress}%</strong></div>
           <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
+          {canEdit ? <form action={updateProjectProgress.bind(null, id)} className="progress-control"><input aria-label="Avance general" name="progress" type="range" min="0" max="100" step="5" defaultValue={progress} /><button type="submit">Guardar avance</button></form> : null}
           <div className="phase-track">
             {(phases ?? []).map((phase) => <span key={phase.id} className={`phase-${phase.status}`}>{phase.name}<small>{phase.status}</small></span>)}
           </div>
@@ -131,6 +135,7 @@ export default async function ProjectDetailPage({
           {canEdit ? <form action={taskAction} className="quick-add">
             <input name="title" required placeholder="Agregar una tarea al proyecto…" />
             <select name="priority" defaultValue="normal"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select>
+            <select name="status" defaultValue="todo"><option value="todo">Por hacer</option><option value="in_progress">En proceso</option><option value="review">Revisión</option><option value="done">Ya terminada</option></select>
             <input name="due_at" type="date" />
             <button type="submit">Agregar</button>
           </form> : null}
@@ -188,7 +193,7 @@ export default async function ProjectDetailPage({
           <div className="workspace-card-head"><div><small>Historial creativo</small><h2>Versiones</h2></div><span>{(versions ?? []).length}</span></div>
           {(versions ?? []).slice(0, 4).map((version) => <div className="version-row" key={version.id}><b>V{version.version_number}</b><div><strong>{version.title}</strong><small>{version.status} · {shortDate(version.created_at)}</small></div></div>)}
           {!(versions ?? []).length ? <p className="muted">{renders?.length ?? 0} renders existentes. La próxima generación podrá convertirse en versión formal.</p> : null}
-          {canEdit ? <Link href="/panel/nuevo-render" className="text-link">Nueva versión visual <ArrowRightIcon width={11} height={11} /></Link> : null}
+          {canEdit ? <Link href={`/panel/nuevo-render?projectId=${id}`} className="text-link">Nueva versión visual <ArrowRightIcon width={11} height={11} /></Link> : null}
         </article>
         <article className="workspace-card">
           <div className="workspace-card-head"><div><small>Finanzas</small><h2>Presupuestos</h2></div><span>{(budgets ?? []).length}</span></div>
@@ -229,11 +234,21 @@ export default async function ProjectDetailPage({
         </article>
       </section>
 
+      <section className="workspace-card project-render-library">
+        <div className="workspace-card-head"><div><small>Producción visual</small><h2>Todos los renders del proyecto</h2></div><span>{visibleRenders.length}</span></div>
+        {visibleRenders.length ? <div className="project-render-grid">{visibleRenders.map((render, index) => (
+          <Link href={`/panel/render/${render.id}/editar`} className="project-render-card" key={render.id}>
+            <Image src={render.signedUrl!} alt={`Render ${index + 1} de ${project.name}`} width={900} height={650} unoptimized />
+            <div><strong>Render {String(visibleRenders.length - index).padStart(2, "0")}</strong><small>{shortDate(render.created_at)} · {render.provider || "Muromío AI"}</small><span>Editar render ↗</span></div>
+          </Link>
+        ))}</div> : <div className="workspace-empty"><span>Los renders que generes para este proyecto aparecerán aquí.</span>{canEdit ? <Link href={`/panel/nuevo-render?projectId=${id}`}>Crear el primero</Link> : null}</div>}
+      </section>
+
       <section className="project-presentation-grid">
         <article className="workspace-card presentation-compare">
           <div className="workspace-card-head"><div><small>Presentación interactiva</small><h2>Antes / después</h2></div></div>
-          {renderUrls[0] && renderUrls[1] ? (
-            <BeforeAfter before={renderUrls[1]} after={renderUrls[0]} beforeLabel="Versión anterior" afterLabel="Versión actual" />
+          {visibleRenders[0]?.signedUrl && visibleRenders[1]?.signedUrl ? (
+            <BeforeAfter before={visibleRenders[1].signedUrl} after={visibleRenders[0].signedUrl} beforeLabel="Versión anterior" afterLabel="Versión actual" />
           ) : (
             <div className="comparison-empty"><strong>Dos versiones desbloquean el comparador.</strong><p>Genera una variación para presentar la evolución visual con un deslizador.</p><Link href="/panel/nuevo-render">Crear otra versión <ArrowRightIcon width={11} height={11} /></Link></div>
           )}
@@ -260,6 +275,9 @@ export default async function ProjectDetailPage({
             {canEdit ? <form action={documentAction} className="workspace-form compact-form">
               <select name="document_type" defaultValue="proposal"><option value="proposal">Propuesta de diseño</option><option value="brief">Brief</option><option value="minutes">Minuta</option><option value="spec_sheet">Fichas técnicas</option><option value="weekly_report">Reporte semanal</option><option value="approval">Acta de aprobación</option><option value="delivery_manual">Manual de entrega</option></select>
               <input name="title" placeholder="Título personalizado (opcional)" />
+              <fieldset className="document-options"><legend>Información que incluirá</legend><label><input type="checkbox" name="sections" value="vision" defaultChecked /> Visión y datos</label><label><input type="checkbox" name="sections" value="process" defaultChecked /> Proceso y avance</label><label><input type="checkbox" name="sections" value="renders" defaultChecked /> Renders seleccionados</label><label><input type="checkbox" name="sections" value="budget" /> Presupuesto</label><label><input type="checkbox" name="sections" value="notes" /> Notas</label></fieldset>
+              <textarea name="notes" rows={3} placeholder="Contexto, decisiones o texto especial para este documento…" />
+              {visibleRenders.length ? <fieldset className="document-render-picker"><legend>Selecciona los renders</legend>{visibleRenders.map((render, index) => <label key={render.id}><input type="checkbox" name="render_ids" value={render.id} defaultChecked={index < 3} /><Image src={render.signedUrl!} alt="" width={120} height={84} unoptimized /><span>Render {visibleRenders.length - index}</span></label>)}</fieldset> : null}
               <button className="button-secondary" type="submit">Crear documento</button>
             </form> : null}
             {(documents ?? []).slice(0, 3).map((document) => <p className="tool-result" key={document.id}><span>{document.title}</span><Link href={`/panel/proyectos/${id}/documentos/${document.id}`} target="_blank">Abrir <ExternalLinkIcon width={10} height={10} /></Link></p>)}

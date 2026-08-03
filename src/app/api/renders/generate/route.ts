@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   const uploadedImage = formData.get("image");
   const uploadedStyleImage = formData.get("styleImage");
   const sourceRenderId = String(formData.get("sourceRenderId") ?? "").trim();
+  const requestedProjectId = String(formData.get("projectId") ?? "").trim();
   const projectName = String(formData.get("projectName") ?? "").trim().slice(0, 120);
   const details = String(formData.get("details") ?? "").trim().slice(0, 1200);
   const style = String(formData.get("style") ?? "minimalismo cálido").trim().slice(0, 80);
@@ -110,6 +111,11 @@ export async function POST(request: Request) {
     .join(" ");
 
   let projectId = existingProjectId;
+  if (!projectId && requestedProjectId) {
+    const { data: canEdit } = await supabase.rpc("can_edit_project", { target_project_id: requestedProjectId });
+    if (!canEdit) return NextResponse.json({ error: "No tienes permiso para agregar renders a este proyecto." }, { status: 403 });
+    projectId = requestedProjectId;
+  }
   if (!projectId) {
     const { data: project, error: projectError } = await supabase.rpc(
       "create_workspace_project",

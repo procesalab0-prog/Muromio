@@ -15,16 +15,21 @@ const styles = [
 
 export function RenderForm({
   sourceRenderId,
+  selectedProjectId,
+  projects,
   initialCredits,
   unlimitedCredits,
 }: {
   sourceRenderId?: string;
+  selectedProjectId?: string;
+  projects: Array<{ id: string; name: string }>;
   initialCredits: number;
   unlimitedCredits: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState("");
+  const [resultProjectId, setResultProjectId] = useState("");
   const [mode, setMode] = useState("sketch");
   const [credits, setCredits] = useState(initialCredits);
 
@@ -74,6 +79,7 @@ export function RenderForm({
       }
 
       setResult(data.image);
+      setResultProjectId(data.projectId || selectedProjectId || "");
       if (data.credits && !data.credits.unlimited_credits) {
         setCredits(data.credits.credit_balance);
       }
@@ -93,14 +99,22 @@ export function RenderForm({
           <span style={{ color: "var(--rust)" }}>{unlimitedCredits ? "Sin límite" : `${credits} créditos`}</span>
         </div>
         {sourceRenderId ? <input type="hidden" name="sourceRenderId" value={sourceRenderId} /> : null}
+        {!sourceRenderId ? <label>
+          Proyecto
+          <select name="projectId" defaultValue={selectedProjectId || ""}>
+            <option value="">Crear un proyecto nuevo</option>
+            {projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}
+          </select>
+          <small>El render y sus futuras ediciones quedarán guardados en este expediente.</small>
+        </label> : null}
         <label>
-          Nombre del proyecto
+          {selectedProjectId ? "Nombre de esta propuesta" : "Nombre del proyecto o propuesta"}
           <input
             name="projectName"
             required
             maxLength={120}
             placeholder="Casa Roble"
-            defaultValue={sourceRenderId ? "Nueva variación" : ""}
+            defaultValue={sourceRenderId ? "Nueva variación" : projects.find((project) => project.id === selectedProjectId)?.name || ""}
           />
         </label>
         <label>
@@ -163,8 +177,8 @@ export function RenderForm({
               <a href={result} download="muromio-render.webp" style={actionStyle}>
                 Descargar
               </a>
-              <Link href="/panel" style={actionStyle}>
-                Ver historial
+              <Link href={resultProjectId ? `/panel/proyectos/${resultProjectId}` : "/panel/proyectos"} style={actionStyle}>
+                Ver proyecto
               </Link>
             </div>
           </>

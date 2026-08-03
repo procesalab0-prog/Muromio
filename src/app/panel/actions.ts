@@ -161,6 +161,8 @@ export async function createTask(projectId: string, formData: FormData) {
   const { supabase, user } = await requireWorkspace();
   const title = text(formData, "title", 220);
   if (!title) return;
+  const status = text(formData, "status", 30) || "todo";
+  const safeStatus = ["todo", "in_progress", "review", "done"].includes(status) ? status : "todo";
   const { data, error } = await supabase
     .from("tasks")
     .insert({
@@ -169,6 +171,8 @@ export async function createTask(projectId: string, formData: FormData) {
       description: optionalText(formData, "description", 1000),
       priority: text(formData, "priority", 20) || "normal",
       due_at: optionalText(formData, "due_at", 40),
+      status: safeStatus,
+      completed_at: safeStatus === "done" ? new Date().toISOString() : null,
       created_by: user.id,
     })
     .select("id")
@@ -270,9 +274,16 @@ export async function queueProjectVideo(projectId: string, formData: FormData) {
 }
 
 export async function createProjectDocument(projectId: string, formData: FormData) {
-  const { supabase, user } = await requireWorkspace();
+  const { supabase, user } = await requireProjectEditor(projectId);
   const documentType = text(formData, "document_type", 40) || "proposal";
   const title = text(formData, "title", 180) || documentLabel(documentType);
+  const requestedRenderIds = formData.getAll("render_ids").map(String).filter(Boolean).slice(0, 20);
+  const requestedSections = formData.getAll("sections").map(String);
+  const allowedSections = ["vision", "process", "renders", "budget", "notes"];
+  const includedSections = requestedSections.filter((section) => allowedSections.includes(section));
+  const { data: allowedRenders } = requestedRenderIds.length
+    ? await supabase.from("renders").select("id").eq("project_id", projectId).eq("status", "completed").in("id", requestedRenderIds)
+    : { data: [] };
   const { data, error } = await supabase
     .from("generated_documents")
     .insert({
@@ -280,12 +291,28 @@ export async function createProjectDocument(projectId: string, formData: FormDat
       document_type: documentType,
       title,
       status: "ready",
+      included_sections: includedSections.length ? includedSections : defaultDocumentSections(documentType),
+      render_ids: (allowedRenders ?? []).map((render) => render.id),
+      notes: optionalText(formData, "notes", 2500),
       created_by: user.id,
     })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
   await recordActivity(projectId, "document.created", "document", data.id, `Se inició el documento ${title}.`);
+  revalidatePath(`/panel/proyectos/${projectId}`);
+}
+
+export async function updateProjectProgress(projectId: string, formData: FormData) {
+  const { supabase } = await requireProjectEditor(projectId);
+  const progress = Math.max(0, Math.min(100, Math.round(numberValue(formData, "progress") ?? 0)));
+  const { error } = await supabase.from("projects").update({
+    progress_percent: progress,
+    updated_at: new Date().toISOString(),
+  }).eq("id", projectId);
+  if (error) throw new Error(error.message);
+  await recordActivity(projectId, "project.progress", "project", projectId, `El avance general cambió a ${progress}%.`);
+  revalidatePath("/panel");
   revalidatePath(`/panel/proyectos/${projectId}`);
 }
 
@@ -419,4 +446,12 @@ function documentLabel(type: string) {
     approval: "Acta de aprobación",
     delivery_manual: "Manual de entrega",
   } as Record<string, string>)[type] || "Documento Muromío";
+}
+
+function defaultDocumentSections(type: string) {
+  if (type === "budget") return ["vision", "budget"];
+  if (type === "brief") return ["vision", "process", "notes"];
+  if (type === "minutes" || type === "weekly_report") return ["process", "renders", "notes"];
+  if (type === "spec_sheet") return ["renders", "notes"];
+  return ["vision", "process", "renders", "budget", "notes"];
 }
